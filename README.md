@@ -1,6 +1,8 @@
 # Meantime
 
-**A precision alert system for the gaps between appointments.**
+**A precision alert system for the hours you're on your own.**
+
+Before any treatment · Waiting for surgery · After discharge — three phases of one patient's care, one engine, one rule file.
 
 > 📹 **Demo video:** _add link here_
 
@@ -14,7 +16,7 @@
 
 **Patient-initiated symptom triage across the peri-operative window for total knee replacement (TKA).**
 
-A patient describes a symptom in their own words, at home, between appointments. The agent assigns one of five urgency levels, tells them what to do, and routes an escalation to the right clinician. It covers three phases of the same patient's care:
+A patient describes a symptom in their own words, at home, with no clinician available. The agent assigns one of five urgency levels, tells them what to do, and routes an escalation to the right person — which differs by phase, because a patient with no procedure booked has no care team to message. It covers three phases of the same patient's care:
 
 | phase | clinical territory it covers |
 |---|---|
@@ -54,7 +56,7 @@ Opens at `http://localhost:8501`. The rule engine runs without an API key — `p
 
 ## What we're solving
 
-It's late. Something doesn't feel right. The hospital is behind you, the next appointment is weeks away, and whatever is happening in your body is happening **now**.
+It's late. Something doesn't feel right, and there is no one to ask. Not tonight — and depending on where you are in your care, maybe not for weeks. Whatever is happening in your body is happening **now**.
 
 You have three options. All three fail you, in different ways.
 
