@@ -8,11 +8,28 @@
   "arrival_time": "05:45",
   "hospital": "Medical Mile Orthopaedic Center",
   "demo_days_until_surgery": 6,
-  "surgeon": {"name": "Dr. Marcus Ellery", "practice": "Medical Mile Orthopaedic Center", "office_phone": "616-555-0150", "on_call_phone": "616-555-0199"},
-  "scheduler": {"name": "Surgical scheduling", "phone": "616-555-0150"},
+  "surgeon": {
+    "name": "Dr. Marcus Ellery",
+    "practice": "Medical Mile Orthopaedic Center",
+    "office_phone": "616-555-0150",
+    "on_call_phone": "616-555-0199"
+  },
+  "scheduler": {
+    "name": "Surgical scheduling",
+    "phone": "616-555-0150"
+  },
   "pre_op_appointments": [
-    {"type": "Pre-operative assessment", "with": "Pre-op clinic nurse", "date": "2026-09-03"},
-    {"type": "Joint replacement class", "with": "River City PT", "date": "2026-09-04", "note": "bring a family member"}
+    {
+      "type": "Pre-operative assessment",
+      "with": "Pre-op clinic nurse",
+      "date": "2026-09-03"
+    },
+    {
+      "type": "Joint replacement class",
+      "with": "River City PT",
+      "date": "2026-09-04",
+      "note": "bring a family member"
+    }
   ],
   "preparation": {
     "fasting": "Nothing to eat after midnight the night before. Clear fluids until 4 hours before your arrival time.",
@@ -30,5 +47,17 @@
     "Call if you eat or drink after the cutoff. Do not simply arrive and say nothing.",
     "Call if you fall or injure yourself before the operation.",
     "Call if your blood sugar has been running higher than usual."
+  ],
+  "diagnosis_codes": [
+    {
+      "code": "M17.11",
+      "system": "icd10",
+      "label": "Unilateral primary osteoarthritis, right knee"
+    },
+    {
+      "code": "Z01.818",
+      "system": "icd10",
+      "label": "Encounter for other preprocedural examination"
+    }
   ]
 }

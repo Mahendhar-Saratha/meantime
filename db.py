@@ -234,6 +234,7 @@ def get_patient_context(patient_id: str = PATIENT_ID, phase: str = "post_op") ->
                 "scheduler_phone": booking["scheduler"]["phone"],
                 "preparation": booking["preparation"],
                 "warning_list": booking["warning_list"],
+                "diagnosis_codes": booking.get("diagnosis_codes", []),
                 "pre_op_appointments": booking["pre_op_appointments"],
                 "days_until_surgery": (surgery_date - today).days,
                 "next_followup": (
@@ -280,6 +281,7 @@ def get_patient_context(patient_id: str = PATIENT_ID, phase: str = "post_op") ->
             "discharge_medications": meds,
             "instructions": discharge["instructions"],
             "warning_list": discharge["warning_list"],
+            "diagnosis_codes": discharge.get("diagnosis_codes", []),
             "follow_up": discharge["follow_up"],
             "post_op_day": (today - surgery_date).days,
             "on_anticoagulant": any(m.get("class") == "anticoagulant" for m in meds),

@@ -6,14 +6,44 @@
   "laterality": "right",
   "surgery_date": "2026-09-08",
   "discharge_date": "2026-09-10",
-  "surgeon": {"name": "Dr. Marcus Ellery", "practice": "Medical Mile Orthopaedic Center", "office_phone": "616-555-0150", "on_call_phone": "616-555-0199"},
+  "surgeon": {
+    "name": "Dr. Marcus Ellery",
+    "practice": "Medical Mile Orthopaedic Center",
+    "office_phone": "616-555-0150",
+    "on_call_phone": "616-555-0199"
+  },
   "discharge_diagnosis": "Primary osteoarthritis of right knee, status post right total knee arthroplasty. Uncomplicated hospital course.",
   "discharge_medications": [
-    {"name": "apixaban", "dose": "2.5 mg", "frequency": "twice daily", "duration_days": 14, "purpose": "blood clot prevention", "class": "anticoagulant"},
-    {"name": "oxycodone", "dose": "5 mg", "frequency": "every 6 hours as needed for severe pain", "class": "opioid"},
-    {"name": "acetaminophen", "dose": "1000 mg", "frequency": "every 8 hours", "class": "analgesic"},
-    {"name": "docusate", "dose": "100 mg", "frequency": "twice daily", "purpose": "prevent constipation from oxycodone"},
-    {"name": "continue home medications", "note": "lisinopril, metformin, atorvastatin unchanged"}
+    {
+      "name": "apixaban",
+      "dose": "2.5 mg",
+      "frequency": "twice daily",
+      "duration_days": 14,
+      "purpose": "blood clot prevention",
+      "class": "anticoagulant"
+    },
+    {
+      "name": "oxycodone",
+      "dose": "5 mg",
+      "frequency": "every 6 hours as needed for severe pain",
+      "class": "opioid"
+    },
+    {
+      "name": "acetaminophen",
+      "dose": "1000 mg",
+      "frequency": "every 8 hours",
+      "class": "analgesic"
+    },
+    {
+      "name": "docusate",
+      "dose": "100 mg",
+      "frequency": "twice daily",
+      "purpose": "prevent constipation from oxycodone"
+    },
+    {
+      "name": "continue home medications",
+      "note": "lisinopril, metformin, atorvastatin unchanged"
+    }
   ],
   "instructions": {
     "weight_bearing": "As tolerated with walker",
@@ -34,8 +64,38 @@
     "Call if pain is not controlled by your medication as prescribed."
   ],
   "follow_up": [
-    {"type": "Wound check", "with": "Ortho clinic nurse", "date": "2026-09-24"},
-    {"type": "Post-op visit", "with": "Dr. Ellery", "date": "2026-10-22"},
-    {"type": "Physical therapy", "with": "River City PT", "date": "2026-09-14", "note": "then 3x/week"}
+    {
+      "type": "Wound check",
+      "with": "Ortho clinic nurse",
+      "date": "2026-09-24"
+    },
+    {
+      "type": "Post-op visit",
+      "with": "Dr. Ellery",
+      "date": "2026-10-22"
+    },
+    {
+      "type": "Physical therapy",
+      "with": "River City PT",
+      "date": "2026-09-14",
+      "note": "then 3x/week"
+    }
+  ],
+  "diagnosis_codes": [
+    {
+      "code": "Z96.651",
+      "system": "icd10",
+      "label": "Presence of right artificial knee joint"
+    },
+    {
+      "code": "M17.11",
+      "system": "icd10",
+      "label": "Unilateral primary osteoarthritis, right knee"
+    },
+    {
+      "code": "Z79.01",
+      "system": "icd10",
+      "label": "Long term (current) use of anticoagulants"
+    }
   ]
 }

@@ -64,8 +64,16 @@ CSS = """
 
 /* --- strip Streamlit chrome --- */
 [data-testid="stHeader"], [data-testid="stToolbar"], #MainMenu, footer { display: none !important; }
-.stApp { background: var(--paper); }
-.stApp, .stApp p, .stApp div, .stApp span, .stApp li, .stApp label { font-family: var(--font); }
+.stApp { background: var(--paper); font-family: var(--font); }
+/* Set the family once and let it inherit. Do NOT blanket-override span/div:
+   Streamlit draws its icons as ligature text in the Material Symbols font, so
+   overriding those spans turns every chevron into the literal words
+   "keyboard_arrow_down" and every avatar into "smart_toy". */
+.stApp p, .stApp li, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5,
+.stApp input, .stApp textarea, .stApp button,
+[data-testid="stMarkdownContainer"] { font-family: var(--font); }
+[data-testid="stIconMaterial"], .stApp span[class*="material"] {
+  font-family: 'Material Symbols Rounded', 'Material Symbols Outlined' !important; }
 .block-container { padding-top: 1.1rem !important; padding-bottom: 6rem; max-width: 1500px; }
 [data-testid="stSidebar"] { background: var(--surface); border-right: 1px solid var(--line); }
 [data-testid="stSidebar"] .block-container { padding-top: 1rem; }
@@ -351,5 +359,155 @@ def badge_block(level: str, action: str) -> str:
   <div style="color:{LEVEL_COLOR[level]};font-weight:700;letter-spacing:.07em;font-size:.72rem">
     {LEVEL_TEXT[level]}</div>
   <div style="margin-top:.35rem;font-size:.82rem;line-height:1.4;color:#2b333d">{esc(action)}</div>
+</div>
+"""
+
+
+# --- live data components -------------------------------------------------
+
+LIVE_STATUS = {
+    "live": ("#1f7a3d", "LIVE"),
+    "cached": ("#5f6874", "CACHED"),
+    "stale": ("#c2610c", "STALE"),
+    "failed": ("#b3261e", "UNREACHABLE"),
+}
+
+
+def live_chip(status: str) -> str:
+    color, text = LIVE_STATUS.get(status, LIVE_STATUS["cached"])
+    dot = f'<span style="width:6px;height:6px;border-radius:50%;background:{color};display:inline-block"></span>'
+    return (
+        f'<span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.62rem;'
+        f'font-weight:700;letter-spacing:.08em;color:{color}">{dot}{text}</span>'
+    )
+
+
+def api_bar(bundle: dict) -> str:
+    parts = []
+    for key, (name, _) in SOURCE_ENDPOINTS.items():
+        status = bundle["endpoint_status"].get(key, "failed")
+        color, _text = LIVE_STATUS.get(status, LIVE_STATUS["failed"])
+        parts.append(
+            f'<span style="display:inline-flex;align-items:center;gap:.35rem;border:1px solid var(--line);'
+            f'background:var(--surface);border-radius:999px;padding:.28rem .6rem;font-size:.7rem;color:var(--ink-2)">'
+            f'<span style="width:6px;height:6px;border-radius:50%;background:{color}"></span>{esc(name)}</span>'
+        )
+    return '<div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.7rem">' + "".join(parts) + "</div>"
+
+
+# name shown on the status chips; mirrors sources.ENDPOINTS
+SOURCE_ENDPOINTS = {
+    "medlineplus_connect": ("MedlinePlus Connect", ""),
+    "medlineplus_search": ("MedlinePlus topics", ""),
+    "rxnav": ("RxNav / RxNorm", ""),
+    "openfda": ("openFDA labels", ""),
+    "clinicaltrials": ("ClinicalTrials.gov", ""),
+}
+
+
+def education_card(entries: list[dict]) -> str:
+    if not entries:
+        return '<div class="mt-empty">No patient-education links returned.</div>'
+    rows = []
+    for entry in entries:
+        topics = "".join(
+            f'<div style="margin-top:.3rem"><a href="{t["url"]}" target="_blank" '
+            f'style="color:var(--accent);text-decoration:none;font-size:.79rem;font-weight:600">{esc(t["title"])} ↗</a>'
+            f'<div style="font-size:.71rem;color:var(--ink-3);line-height:1.4;margin-top:.1rem">{esc(t["summary"])}</div></div>'
+            for t in entry["topics"]
+        ) or '<div style="font-size:.72rem;color:var(--ink-3)">no match</div>'
+        rows.append(
+            f"""<div class="mt-src" style="display:block">
+  <div style="display:flex;align-items:center;gap:.45rem">
+    <span style="font-family:ui-monospace,monospace;font-size:.7rem;font-weight:700;color:var(--ink);
+                 background:#eef1f6;border-radius:4px;padding:.12rem .35rem">ICD-10 {esc(entry['code'])}</span>
+    <span style="font-size:.72rem;color:var(--ink-3)">{esc(entry['label'])}</span>
+    <span style="margin-left:auto">{live_chip(entry['status'])}</span>
+  </div>
+  {topics}
+</div>"""
+        )
+    return f'<div class="mt-card" style="padding:.35rem .9rem">{"".join(rows)}</div>'
+
+
+def drug_cards(drugs: list[dict]) -> str:
+    if not drugs:
+        return '<div class="mt-empty">No medications to look up in this phase.</div>'
+    rows = []
+    for drug in drugs:
+        rxcui = (
+            f'<span style="font-family:ui-monospace,monospace;font-size:.68rem;color:var(--ink-3)">'
+            f'RxCUI {esc(drug["rxcui"])}</span>'
+            if drug.get("rxcui")
+            else ""
+        )
+        warning = (
+            f'<div style="font-size:.72rem;color:var(--ink-2);line-height:1.45;margin-top:.35rem;'
+            f'border-left:3px solid #b3261e;padding-left:.55rem">{esc(drug["warning"])}</div>'
+            if drug.get("warning")
+            else '<div style="font-size:.72rem;color:var(--ink-3);margin-top:.3rem">No label section returned.</div>'
+        )
+        field = drug.get("warning_field", "").replace("_", " ").upper()
+        rows.append(
+            f"""<div class="mt-src" style="display:block">
+  <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+    <b style="font-size:.82rem">{esc(drug['name'])}</b>{rxcui}
+    <span style="font-size:.64rem;font-weight:700;letter-spacing:.07em;color:#b3261e">{esc(field)}</span>
+    <span style="margin-left:auto">{live_chip(drug.get('status', 'cached'))}</span>
+  </div>
+  {warning}
+</div>"""
+        )
+    return f'<div class="mt-card" style="padding:.35rem .9rem">{"".join(rows)}</div>'
+
+
+def topic_cards(topics: list[dict]) -> str:
+    if not topics:
+        return '<div class="mt-empty">No health topics returned.</div>'
+    rows = []
+    for topic in topics:
+        rows.append(
+            f"""<div class="mt-src" style="display:block">
+  <div style="display:flex;align-items:center;gap:.5rem">
+    <a href="{topic['url']}" target="_blank" style="color:var(--accent);text-decoration:none;
+       font-size:.8rem;font-weight:600">{esc(topic['title'])} ↗</a>
+    <span style="margin-left:auto">{live_chip(topic['status'])}</span>
+  </div>
+  <div style="font-size:.71rem;color:var(--ink-3);line-height:1.45;margin-top:.2rem">{esc(topic['summary'])}</div>
+</div>"""
+        )
+    return f'<div class="mt-card" style="padding:.35rem .9rem">{"".join(rows)}</div>'
+
+
+def trial_rows(studies: list[dict]) -> str:
+    if not studies:
+        return '<div class="mt-empty">No recruiting studies returned.</div>'
+    rows = []
+    for study in studies:
+        rows.append(
+            f"""<div class="mt-src" style="display:block">
+  <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+    <a href="{study['url']}" target="_blank" style="color:var(--accent);text-decoration:none;
+       font-family:ui-monospace,monospace;font-size:.7rem;font-weight:700">{esc(study['nct'])} ↗</a>
+    <span style="font-size:.64rem;font-weight:700;letter-spacing:.06em;color:#1f7a3d">{esc(study['status'])}</span>
+    <span style="font-size:.66rem;color:var(--ink-3)">{esc(study['phase'])}</span>
+  </div>
+  <div style="font-size:.74rem;color:var(--ink-2);line-height:1.4;margin-top:.15rem">{esc(study['title'])}</div>
+</div>"""
+        )
+    return f'<div class="mt-card" style="padding:.35rem .9rem">{"".join(rows)}</div>'
+
+
+def split_note() -> str:
+    return """
+<div class="mt-card" style="border-left:4px solid var(--accent);background:#f4f8f6">
+  <div style="font-size:.79rem;color:var(--ink-2);line-height:1.55">
+    <b style="color:var(--ink)">Live content, local decision.</b>
+    Everything on this panel is fetched from public NIH, FDA and NLM endpoints at page load, keyed on this
+    patient's own ICD-10 codes and medications. The urgency verdict is not: no API publishes machine-readable
+    post-operative red-flag thresholds, and putting a network call in the safety path would make
+    <i>"is this an emergency"</i> depend on someone else's uptime. The rules stay deterministic, offline and
+    auditable. The evidence around them is live.
+  </div>
 </div>
 """

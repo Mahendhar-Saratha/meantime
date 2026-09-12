@@ -28,6 +28,29 @@ Two views over the same session, switched at the top.
 - **Evidence base** — every source, with how many rules cite it and a link to the original.
 - **Care team inbox** — the actual messages the humans received, with who got them and how fast.
 - **Session activity** — every tool call in order.
+- **Live from the source** — see below.
+
+---
+
+## Live content, local decision
+
+The rules are hand-curated and deterministic. The evidence around them is not: the dashboard queries five public health APIs at page load, keyed on this patient's own ICD-10 codes and medications. No API keys, no registration.
+
+| endpoint | what it gives us |
+|---|---|
+| **MedlinePlus Connect** (NIH/NLM) | Feed it `Z96.651` — the code actually on Robert's discharge summary — and it returns the patient-education page an EHR would surface: *Knee Replacement*. `Z79.01` returns *Blood Thinners*. Switch phase and the codes change, so the content changes. |
+| **MedlinePlus web service** (NIH/NLM) | Health-topic summaries for the concepts the rules cite — deep vein thrombosis, surgical wound infection. |
+| **RxNav / RxNorm** (NIH/NLM) | Real RxCUIs for his medications. Apixaban is `1364430`. |
+| **openFDA** (FDA) | The live drug label. Apixaban's **boxed warning** — *"premature discontinuation increases the risk of thrombotic events"* — is the FDA's own text, and it is exactly why rule K11 exists. |
+| **ClinicalTrials.gov v2** | Studies recruiting now for knee osteoarthritis. |
+
+**What is deliberately not live: the urgency decision.**
+
+No public API publishes machine-readable post-operative red-flag thresholds keyed by procedure and severity — which is why `red_flags.json` is hand-curated with citations in the first place. And even if one existed, putting a network call in the safety path would mean the answer to *"is this an emergency"* depends on someone else's uptime, and stops being reproducible. The engine stays deterministic, offline and auditable. The evidence around it is live.
+
+Everything is cached to `data/cache/` with a TTL, so the demo runs with the network unplugged and public infrastructure isn't hammered. Each panel is marked **LIVE**, **CACHED**, **STALE** or **UNREACHABLE**, and **Refresh** forces a real network round-trip so you can prove the calls are real.
+
+AAOS OrthoInfo and the NHS publish no open API, so rules citing them link to the page instead. That's an honest limitation, not an oversight.
 
 ---
 
@@ -61,9 +84,11 @@ Nothing in the agent's prompt knows this. It falls out of the `phase` field on e
 │  chat +      │  replies  │   tool loop) │   results    │  assess_urgency ───┼──▶ engine.py + red_flags.json
 │  sidebar     │           └──────────────┘              │  explore_possibil. ┼──▶ engine.py + conditions.json
 │              │ ◀──────────────── reads ───────────────  │  message_care_team│
-└──────────────┘                                         │  schedule_checkin  │──▶ SQLite (meantime.db)
-                                                         │  log_symptom       │
-                                                         └────────────────────┘
+└──────┬───────┘                                         │  schedule_checkin  │──▶ SQLite (meantime.db)
+       │                                                 │  log_symptom       │
+       │  dashboard only, never in the safety path       └────────────────────┘
+       └──▶ sources.py ──▶ MedlinePlus Connect · MedlinePlus topics · RxNav
+                           openFDA labels · ClinicalTrials.gov   (cached to disk)
 ```
 
 | stage | who | what |
@@ -180,6 +205,7 @@ python agent.py post_op             # the same agent in the terminal, with tool 
 python agent.py pre_op              # or no_procedure
 python -m pytest tests -q           # 28 rule-engine tests
 python db.py                        # print all three phase contexts
+python sources.py                   # hit the five public APIs and print what comes back
 ```
 
 ---

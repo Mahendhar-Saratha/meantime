@@ -20,7 +20,16 @@ load_dotenv()
 import agent  # noqa: E402
 import db  # noqa: E402
 import engine  # noqa: E402
+import sources  # noqa: E402
 import ui  # noqa: E402
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def live_bundle(phase: str, _ctx: dict, nonce: int = 0, force: bool = False) -> dict:
+    """Public-API lookups for this patient. Cached so switching views does not
+    re-hit NIH every rerun; sources.py also caches to disk for offline runs.
+    `force` bypasses both, for the Refresh button."""
+    return sources.live_bundle(_ctx, force=force)
 
 st.set_page_config(page_title="Meantime", page_icon="🩺", layout="wide", initial_sidebar_state="expanded")
 st.markdown(ui.CSS, unsafe_allow_html=True)
@@ -381,6 +390,54 @@ if view == "Dashboard":
 
         st.markdown(ui.heading("Session activity", "every tool call, in order"), unsafe_allow_html=True)
         st.markdown(ui.activity(event_rows()), unsafe_allow_html=True)
+
+    # --- live public-API panel -------------------------------------------
+    head, refresh = st.columns([5, 1])
+    with head:
+        st.markdown(
+            ui.heading("Live from the source", "NIH · FDA · NLM, fetched for this patient at page load"),
+            unsafe_allow_html=True,
+        )
+    with refresh:
+        st.write("")
+        if st.button("Refresh", use_container_width=True, help="Re-fetch from the public APIs now"):
+            st.session_state.live_nonce = st.session_state.get("live_nonce", 0) + 1
+            st.session_state.force_live = True
+            st.rerun()
+
+    with st.spinner("Querying MedlinePlus, RxNav, openFDA and ClinicalTrials.gov…"):
+        try:
+            force = st.session_state.pop("force_live", False)
+            bundle = live_bundle(phase, ctx, st.session_state.get("live_nonce", 0), force)
+        except Exception as exc:
+            bundle = None
+            st.warning(f"Could not reach the public APIs: {exc}")
+
+    if bundle:
+        st.markdown(ui.api_bar(bundle), unsafe_allow_html=True)
+        st.caption(
+            f"{bundle['live_count']} fetched live · {bundle['cached_count']} from cache · "
+            f"{bundle['failed_count']} unreachable · checked {bundle['checked_at']}"
+        )
+        st.markdown(ui.split_note(), unsafe_allow_html=True)
+
+        col_a, col_b, col_c = st.columns(3, gap="medium")
+        with col_a:
+            st.markdown(
+                ui.heading("Patient education", "MedlinePlus Connect, keyed on his own ICD-10 codes"),
+                unsafe_allow_html=True,
+            )
+            st.markdown(ui.education_card(bundle["education"]), unsafe_allow_html=True)
+            st.markdown(ui.heading("Concepts the rules cite", "MedlinePlus health topics"), unsafe_allow_html=True)
+            st.markdown(ui.topic_cards(bundle["topics"]), unsafe_allow_html=True)
+        with col_b:
+            st.markdown(
+                ui.heading("Medications", "RxNorm identity + the live FDA label"), unsafe_allow_html=True
+            )
+            st.markdown(ui.drug_cards(bundle["drugs"]), unsafe_allow_html=True)
+        with col_c:
+            st.markdown(ui.heading("Studies recruiting now", "ClinicalTrials.gov"), unsafe_allow_html=True)
+            st.markdown(ui.trial_rows(bundle["trials"]), unsafe_allow_html=True)
 
 
 # --- conversation ---------------------------------------------------------
