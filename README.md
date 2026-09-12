@@ -4,7 +4,7 @@
 
 > 📹 **Demo video:** _add link here_
 
-![Meantime, Path A](docs/path-a.png)
+![Meantime — five urgency levels, every one decided by a curated rule with a citation](docs/banner.svg)
 
 ---
 

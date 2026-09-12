@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" width="1000" height="300"
+     role="img" aria-label="Meantime — a precision alert system for the gaps between appointments. Five urgency levels: emergency, urgent, contact team, monitor, uncertain.">
+  <!-- Painted ground, so the card reads identically on GitHub's light and dark themes -->
+  <rect x="0" y="0" width="1000" height="300" rx="10" fill="#f7f6f3"/>
+  <rect x="0.5" y="0.5" width="999" height="299" rx="10" fill="none" stroke="#e4e1db"/>
+
+  <!-- The mark: an arc with a gap in it, and the patient in the middle of the gap -->
+  <g transform="translate(48,52)" fill="none" stroke="#1f6f5c">
+    <circle cx="24" cy="24" r="19" stroke-width="4" stroke-linecap="round"
+            stroke-dasharray="84 36" transform="rotate(-58 24 24)"/>
+    <circle cx="24" cy="24" r="5.5" fill="#1f6f5c" stroke="none"/>
+  </g>
+
+  <text x="110" y="92" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="52" font-weight="700" letter-spacing="-1.8" fill="#141a21">Meantime</text>
+  <text x="112" y="126" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="18" fill="#4a5560">A precision alert system for the gaps between appointments</text>
+
+  <line x1="48" y1="166" x2="952" y2="166" stroke="#e4e1db" stroke-width="1"/>
+
+  <!-- The five levels: the spine of the product, most severe first -->
+  <g font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+    <g transform="translate(48,192)">
+      <rect x="0" y="0" width="168" height="5" rx="2.5" fill="#b3261e"/>
+      <text x="0" y="28" font-size="14" font-weight="700" letter-spacing="0.9" fill="#b3261e">EMERGENCY</text>
+      <text x="0" y="49" font-size="13.5" fill="#6b7681">Call 911 now</text>
+    </g>
+    <g transform="translate(232,192)">
+      <rect x="0" y="0" width="168" height="5" rx="2.5" fill="#c2610c"/>
+      <text x="0" y="28" font-size="14" font-weight="700" letter-spacing="0.9" fill="#c2610c">URGENT</text>
+      <text x="0" y="49" font-size="13.5" fill="#6b7681">A clinician today</text>
+    </g>
+    <g transform="translate(416,192)">
+      <rect x="0" y="0" width="168" height="5" rx="2.5" fill="#9a7b00"/>
+      <text x="0" y="28" font-size="14" font-weight="700" letter-spacing="0.9" fill="#9a7b00">CONTACT TEAM</text>
+      <text x="0" y="49" font-size="13.5" fill="#6b7681">They call in 24–48h</text>
+    </g>
+    <g transform="translate(600,192)">
+      <rect x="0" y="0" width="168" height="5" rx="2.5" fill="#1f7a3d"/>
+      <text x="0" y="28" font-size="14" font-weight="700" letter-spacing="0.9" fill="#1f7a3d">MONITOR</text>
+      <text x="0" y="49" font-size="13.5" fill="#6b7681">Expected recovery</text>
+    </g>
+    <g transform="translate(784,192)">
+      <rect x="0" y="0" width="168" height="5" rx="2.5" fill="#5f6874"/>
+      <text x="0" y="28" font-size="14" font-weight="700" letter-spacing="0.9" fill="#5f6874">UNCERTAIN</text>
+      <text x="0" y="49" font-size="13.5" fill="#6b7681">The nurse line</text>
+    </g>
+  </g>
+
+  <text x="48" y="277" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="13.5" fill="#7b8694">Every level decided by a curated rule with a citation — never by the model. Nothing matching is never “you’re fine”.</text>
+</svg>
