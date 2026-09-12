@@ -4,8 +4,6 @@
 
 Before any treatment · Waiting for surgery · After discharge — three phases of one patient's care, one engine, one rule file.
 
-> 📹 **Demo video:** _add link here_
-
 ![Meantime — five urgency levels, every one decided by a curated rule with a citation](docs/banner.svg)
 
 ---
