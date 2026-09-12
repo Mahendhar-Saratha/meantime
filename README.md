@@ -8,6 +8,50 @@
 
 ---
 
+## At a glance
+
+### The medical process this handles
+
+**Patient-initiated symptom triage across the peri-operative window for total knee replacement (TKA).**
+
+A patient describes a symptom in their own words, at home, between appointments. The agent assigns one of five urgency levels, tells them what to do, and routes an escalation to the right clinician. It covers three phases of the same patient's care:
+
+| phase | clinical territory it covers |
+|---|---|
+| **Before any procedure** | Undiagnosed knee complaint — septic joint screening, an unstable or locked knee, and persistent pain that needs a proper assessment. |
+| **Waiting for surgery** | Pre-operative readiness: infection screening, skin integrity on the operative limb, dental and urinary sources, medication holds, fasting compliance, glycaemic control. Several of these mean the operation should be postponed. |
+| **After discharge** | Post-operative recovery: DVT and pulmonary embolism surveillance, surgical site infection, wound complications, bleeding on anticoagulation, neurovascular compromise, falls, pain control, and separating all of that from expected recovery. |
+
+Plus a general block that applies in every phase — chest pain, breathlessness, stroke signs, anaphylaxis, GI bleeding, and mental-health crisis.
+
+**It does not diagnose, does not give doses, and does not replace clinical judgement.** It decides how urgent something is and who needs to hear about it. Nothing matching is never "you're fine" — it is `UNCERTAIN`, which means a phone number.
+
+### How to run it
+
+```bash
+git clone https://github.com/Mahendhar-Saratha/meantime.git && cd meantime
+python -m venv .venv && . .venv/Scripts/activate   # macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env                               # then add your ANTHROPIC_API_KEY
+streamlit run app.py
+```
+
+Opens at `http://localhost:8501`. The rule engine runs without an API key — `python -m pytest tests -q` needs no network and no credentials. Full setup notes, the other entry points and one Streamlit gotcha are in [Running it](#running-it).
+
+### Stack
+
+| | |
+|---|---|
+| **Model** | Claude Sonnet 5 (`claude-sonnet-5`) via the Anthropic **Messages API** with tool use — a hand-written tool loop, 8 tools, no agent framework |
+| **Language** | Python 3.11+ (built on 3.12) |
+| **Storage** | SQLite via the standard library — no ORM |
+| **Interface** | Streamlit — chat plus an evidence dashboard |
+| **Live data** | `urllib` against five public endpoints: MedlinePlus Connect, the MedlinePlus web service, RxNav/RxNorm, openFDA, ClinicalTrials.gov. No API keys |
+| **Tests** | pytest — 35 tests against the real rule file, no mocking |
+| **Deliberately absent** | No LangChain, no vector database, no embeddings, no async. The urgency engine (`engine.py`) imports nothing but `re` — that is what makes it auditable |
+
+---
+
 ## What we're solving
 
 It's late. Something doesn't feel right. The hospital is behind you, the next appointment is weeks away, and whatever is happening in your body is happening **now**.
