@@ -400,14 +400,47 @@ if view == "Dashboard":
     left, right = st.columns([1.55, 1], gap="medium")
 
     with left:
+        trace = (assessment or {}).get("trace") or {}
         st.markdown(
-            ui.heading("Rules that can fire right now", f"{len(active_rules)} for {PHASE_LABELS[phase].lower()}"),
+            ui.heading(
+                "The rule filter",
+                "re-run on every message, against what he actually said" if trace else "waiting for a message",
+            ),
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            ui.filter_funnel(trace, PHASE_LABELS[phase], (assessment or {}).get("level", "UNCERTAIN")),
+            unsafe_allow_html=True,
+        )
+
+        in_play = set(trace.get("surviving") or [])
+        ruled_out = {e["id"] for e in trace.get("excluded") or []}
+        st.markdown(
+            ui.heading(
+                "Rules that can fire right now",
+                f"{len(active_rules)} for {PHASE_LABELS[phase].lower()}"
+                + (
+                    f" · {len(in_play)} fired, {len(ruled_out)} ruled out on the last message"
+                    if (in_play or ruled_out)
+                    else ""
+                ),
+            ),
             unsafe_allow_html=True,
         )
         st.markdown(ui.distribution(Counter(r["level"] for r in active_rules)), unsafe_allow_html=True)
         order = {"EMERGENCY": 0, "URGENT": 1, "CONTACT_TEAM": 2, "MONITOR": 3}
-        ranked = sorted(active_rules, key=lambda r: (order[r["level"]], r["id"]))
-        st.markdown(ui.rule_rows(ranked), unsafe_allow_html=True)
+        # rules the last message put in play float to the top
+        ranked = sorted(
+            active_rules,
+            key=lambda r: (
+                0 if r["id"] in in_play else (1 if r["id"] in ruled_out else 2),
+                order[r["level"]],
+                r["id"],
+            ),
+        )
+        st.markdown(
+            ui.rule_rows(ranked, highlight=in_play, ruled_out=ruled_out), unsafe_allow_html=True
+        )
 
     with right:
         st.markdown(ui.heading("Evidence base", "every rule traces to one of these"), unsafe_allow_html=True)

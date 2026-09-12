@@ -26,7 +26,8 @@ So that you don't have to choose, a thin strip under the masthead carries the cr
 
 - **Where Robert is · Current verdict · Escalations to a human · Rules in force** — the session in four numbers.
 - **The arc** — the three phases, with how many rules are live in each. The current one is marked.
-- **Rules that can fire right now** — all 31 of them for this phase, ranked by severity, each with its rationale, its triggers and a source chip. Nothing is hidden behind the model.
+- **The rule filter** — the narrowing, re-run on every message and shown as it happens: `44` in the library → `44` for this procedure → `31` at this phase → `2` triggered by what he just said → `1` surviving the exclusions → the verdict. When a rule is ruled out, it says which word did it: *M1 (MONITOR) ruled out by `calf_pain`*.
+- **Rules that can fire right now** — all 31 for this phase, ranked by severity, each with its rationale, its triggers and a source chip. The ones the last message put in play float to the top, marked **FIRED** or **RULED OUT**. Nothing is hidden behind the model.
 - **Evidence base** — every source, with how many rules cite it and a link to the original.
 - **Care team inbox** — the actual messages the humans received, with who got them and how fast.
 - **Session activity** — every tool call in order.

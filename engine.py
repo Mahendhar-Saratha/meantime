@@ -148,7 +148,7 @@ def _match_to_dict(rule: dict, level: str, confidence: str) -> dict:
     }
 
 
-def _assessment(level: str, matched: list[dict], confidence: str, ctx: dict) -> dict:
+def _assessment(level: str, matched: list[dict], confidence: str, ctx: dict, trace: dict | None = None) -> dict:
     phase = ctx.get("phase") or DEFAULT_PHASE
 
     actions: list[str] = []
@@ -172,6 +172,7 @@ def _assessment(level: str, matched: list[dict], confidence: str, ctx: dict) -> 
         "actions_required": actions,
         "helpline": ctx.get("helpline"),
         "on_call": ctx.get("on_call"),
+        "trace": trace or {},
     }
 
 
@@ -188,45 +189,79 @@ def assess(report: dict, ctx: dict, rules: list[dict]) -> dict:
 
     phase = ctx.get("phase") or DEFAULT_PHASE
 
+    # The narrowing is recorded as it happens, so the interface can show which
+    # rules were in play for THIS message and which were ruled out and why.
+    # Without this the filtering is real but invisible, and "the rules are
+    # dynamic" is a claim rather than something you can watch.
+    trace: dict = {
+        "library": len(rules),
+        "procedure": 0,
+        "phase": 0,
+        "symptoms": sorted(names),
+        "triggered": [],
+        "excluded": [],
+        "low_confidence": [],
+        "upgraded": [],
+        "chosen": None,
+    }
+
     matches: list[dict] = []
     for rule in rules:
         if rule.get("applies_to") not in ("general", ctx.get("procedure_code")):
             continue
+        trace["procedure"] += 1
         if not applies_in_phase(rule, phase):
             continue
-        if not (set(rule["triggers"]) & names):
+        trace["phase"] += 1
+
+        hit = set(rule["triggers"]) & names
+        if not hit:
             continue
-        if set(rule.get("excludes") or []) & names:
+        trace["triggered"].append(rule["id"])
+
+        blocked = set(rule.get("excludes") or []) & names
+        if blocked:
+            trace["excluded"].append(
+                {"id": rule["id"], "level": rule["level"], "by": sorted(blocked), "rationale": rule["rationale"]}
+            )
             continue
 
         required = rule.get("requires") or []
         confidence = "high"
         if required and not any(q in quals for q in required):
             confidence = "low"
+            trace["low_confidence"].append({"id": rule["id"], "needs": required})
 
         level = rule["level"]
         for mod in rule.get("modifiers") or []:
             conds = mod["if"] if isinstance(mod["if"], list) else [mod["if"]]
             if all(_condition(c, ctx, report, names) for c in conds):
+                if mod["level"] != level:
+                    trace["upgraded"].append(
+                        {"id": rule["id"], "from": level, "to": mod["level"], "because": conds}
+                    )
                 level = mod["level"]
 
         matches.append(_match_to_dict(rule, level, confidence))
 
+    trace["surviving"] = [m["id"] for m in matches]
+
     # Policy 3: nothing matched is not reassurance.
     if not matches:
-        return _assessment("UNCERTAIN", [], "none", ctx)
+        return _assessment("UNCERTAIN", [], "none", ctx, trace)
 
     # Policy 4: only low-confidence matches means a qualifier is missing. The
     # agent gets one clarifying question; if it is still low, this stays
     # UNCERTAIN.
     high = [m for m in matches if m["confidence"] == "high"]
     if not high:
-        return _assessment("UNCERTAIN", matches, "low", ctx)
+        return _assessment("UNCERTAIN", matches, "low", ctx, trace)
 
     # Policies 1 and 2: highest rank wins, ties broken by order in the rules
     # file. sorted() is stable, so EMERGENCY rules stay ahead of everything.
     ordered = sorted(high, key=lambda m: -rank(m["level"]))
-    return _assessment(ordered[0]["level"], ordered, "high", ctx)
+    trace["chosen"] = ordered[0]["id"]
+    return _assessment(ordered[0]["level"], ordered, "high", ctx, trace)
 
 
 def rules_for_phase(rules: list[dict], phase: str, procedure_code: str | None) -> list[dict]:

@@ -314,3 +314,53 @@ def test_recurrence_escalates_pain_that_was_already_reported():
     again = assess(report([sx("pain_uncontrolled")]), dict(CTX, history_symptoms=["pain_uncontrolled"]), RULES)
     assert again["level"] == "URGENT"
     assert again["top_rule"] == "K8"
+
+
+# --- the filter trace: what makes the narrowing visible ------------------
+
+
+def test_trace_records_every_narrowing_step():
+    """'my knee is swollen and my calf hurts' - 44 -> 31 -> 2 -> 1."""
+    r = assess(
+        report([sx("knee_swelling"), sx("calf_pain", side="right", location="calf")]), CTX, RULES
+    )
+    t = r["trace"]
+    assert t["library"] == len(RULES)
+    assert t["procedure"] == len(RULES)  # tka patient: general + tka both apply
+    assert t["phase"] == 31
+    assert t["triggered"] == ["K1", "M1"]
+    assert t["surviving"] == ["K1"]
+    assert t["chosen"] == "K1"
+
+
+def test_trace_names_the_rule_that_was_ruled_out_and_what_ruled_it_out():
+    """The M1-vs-K1 moment is the whole demo; the trace has to explain it."""
+    r = assess(
+        report([sx("knee_swelling"), sx("calf_pain", side="right", location="calf")]), CTX, RULES
+    )
+    dropped = r["trace"]["excluded"]
+    assert [d["id"] for d in dropped] == ["M1"]
+    assert dropped[0]["by"] == ["calf_pain"]
+    assert dropped[0]["rationale"]
+
+
+def test_trace_records_an_upgrade_with_its_reason():
+    r = assess(report([sx("wound_drainage_clear_small")]), CTX, RULES)
+    assert r["level"] == "CONTACT_TEAM"
+    upgrade = r["trace"]["upgraded"][0]
+    assert upgrade["id"] == "M5"
+    assert upgrade["from"] == "MONITOR" and upgrade["to"] == "CONTACT_TEAM"
+    assert upgrade["because"] == ["post_op_day_gt_3"]
+
+
+def test_trace_on_nothing_matched_shows_zero_triggered():
+    t = assess(report([]), CTX, RULES)["trace"]
+    assert t["triggered"] == [] and t["surviving"] == [] and t["chosen"] is None
+    assert t["phase"] == 31  # the rules were there; none of them fit
+
+
+def test_trace_narrows_differently_per_phase():
+    r = report([sx("knee_pain"), sx("stiffness")])
+    assert assess(r, PRE_OP_CTX, RULES)["trace"]["phase"] == 19
+    assert assess(r, dict(CTX, phase="post_op"), RULES)["trace"]["phase"] == 31
+    assert assess(r, NO_PROC_CTX, RULES)["trace"]["phase"] == 12

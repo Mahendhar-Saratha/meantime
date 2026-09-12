@@ -295,16 +295,47 @@ def source_list(entries: list[tuple]) -> str:
     return f'<div class="mt-card" style="padding:.35rem .9rem">{"".join(rows)}</div>'
 
 
-def rule_rows(rules: list[dict], limit: int | None = None) -> str:
+def rule_rows(
+    rules: list[dict],
+    limit: int | None = None,
+    highlight: set | None = None,
+    ruled_out: set | None = None,
+) -> str:
+    """`highlight` fired on the last message; `ruled_out` was triggered and then
+    excluded by something else the patient said."""
     shown = rules[:limit] if limit else rules
+    highlight = highlight or set()
+    ruled_out = ruled_out or set()
     rows = []
     for rule in shown:
         triggers = ", ".join(rule["triggers"][:4])
         if len(rule["triggers"]) > 4:
             triggers += f" +{len(rule['triggers']) - 4}"
+        on = rule["id"] in highlight
+        out = rule["id"] in ruled_out
+        row_style = ""
+        mark = ""
+        if on:
+            row_style = (
+                ' style="background:#f4f8f6;border-left:3px solid var(--accent);'
+                'padding-left:.55rem;margin-left:-.55rem"'
+            )
+            mark = (
+                '<span style="font-size:.58rem;font-weight:700;letter-spacing:.07em;'
+                'color:var(--accent);display:block;margin-top:.15rem">FIRED</span>'
+            )
+        elif out:
+            row_style = (
+                ' style="border-left:3px solid #c8ccd2;padding-left:.55rem;'
+                'margin-left:-.55rem;opacity:.72"'
+            )
+            mark = (
+                '<span style="font-size:.58rem;font-weight:700;letter-spacing:.07em;'
+                'color:var(--ink-3);display:block;margin-top:.15rem">RULED OUT</span>'
+            )
         rows.append(
-            f"""<div class="mt-rule">
-  <div class="mt-rule-id">{esc(rule['id'])}</div>
+            f"""<div class="mt-rule"{row_style}>
+  <div class="mt-rule-id">{esc(rule['id'])}{mark}</div>
   <div class="mt-rule-b">
     <div class="mt-rule-t">{level_pill(rule['level'])} {esc(rule['rationale'])}</div>
     <div class="mt-rule-m">{source_chips(rule['source'])}{esc(triggers)}</div>
@@ -544,3 +575,81 @@ def proof_strip(assessment: dict | None, rule_count: int, source_codes: list[str
         'padding:.45rem .75rem;margin-bottom:.8rem">'
         f"{left}<span style='margin-left:auto'>{right}</span></div>"
     )
+
+
+# --- the live rule filter -------------------------------------------------
+
+def filter_funnel(trace: dict, phase_label: str, level: str) -> str:
+    """Show the narrowing that produced this answer.
+
+    The filtering was always real; without this it was invisible, and "the rules
+    narrow to what he actually said" was a claim rather than something you watch
+    happen on every message.
+    """
+    if not trace:
+        return (
+            '<div class="mt-empty">No message assessed yet. The funnel fills in as soon as '
+            "Robert says something.</div>"
+        )
+
+    said = ", ".join(trace.get("symptoms") or []) or "nothing that maps to a symptom"
+    triggered = trace.get("triggered") or []
+    surviving = trace.get("surviving") or []
+
+    def step(n, label, note="", emphasis=False, zero=False):
+        color = "var(--ink)" if not emphasis else LEVEL_COLOR.get(level, "var(--ink)")
+        muted = "var(--ink-3)" if (zero and not n) else color
+        width = max(4.0, (n / max(trace.get("library", 1), 1)) * 100)
+        bar_color = LEVEL_COLOR.get(level, "#5f6874") if emphasis else "#c8ccd2"
+        return f"""<div style="display:flex;align-items:center;gap:.7rem;padding:.3rem 0">
+  <div style="font-family:ui-monospace,monospace;font-size:1rem;font-weight:700;color:{muted};
+              width:2.4rem;text-align:right;font-variant-numeric:tabular-nums">{n}</div>
+  <div style="flex:0 0 34%;min-width:0">
+    <div style="height:7px;border-radius:4px;background:#eceef1;overflow:hidden">
+      <div style="height:100%;width:{width:.1f}%;background:{bar_color}"></div></div>
+  </div>
+  <div style="font-size:.79rem;color:var(--ink-2);min-width:0">{label}
+    <span style="color:var(--ink-3)">{note}</span></div>
+</div>"""
+
+    rows = [
+        step(trace.get("library", 0), "rules in the library"),
+        step(trace.get("procedure", 0), "apply to this procedure", "· knee replacement"),
+        step(trace.get("phase", 0), "apply at this phase", f"· {esc(phase_label.lower())}"),
+        step(
+            len(triggered),
+            "triggered by what he just said",
+            f"· {esc(said)}" if triggered else "· nothing matched, which is why this is UNCERTAIN",
+            zero=True,
+        ),
+        step(len(surviving), "survive the exclusions", f"· {', '.join(surviving)}" if surviving else ""),
+    ]
+
+    dropped = ""
+    for item in trace.get("excluded") or []:
+        dropped += (
+            f'<div style="font-size:.76rem;color:var(--ink-2);margin-top:.35rem;padding-left:.6rem;'
+            f'border-left:2px solid #d8dce1">'
+            f'<b>{esc(item["id"])}</b> ({esc(item["level"])}) ruled out by '
+            f'<code style="font-family:ui-monospace,monospace;color:{LEVEL_COLOR.get(level, "var(--ink)")}">'
+            f'{esc(", ".join(item["by"]))}</code><br>'
+            f'<span style="color:var(--ink-3)">{esc(item["rationale"][:130])}…</span></div>'
+        )
+
+    upgrades = ""
+    for item in trace.get("upgraded") or []:
+        upgrades += (
+            f'<div style="font-size:.76rem;color:var(--ink-2);margin-top:.35rem;padding-left:.6rem;'
+            f'border-left:2px solid {LEVEL_COLOR.get(item["to"], "#d8dce1")}">'
+            f'<b>{esc(item["id"])}</b> upgraded {esc(item["from"])} → <b>{esc(item["to"])}</b> '
+            f'<span style="color:var(--ink-3)">because {esc(", ".join(item["because"]))}</span></div>'
+        )
+
+    chosen = trace.get("chosen")
+    final = (
+        f'<div style="margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--line-2);'
+        f'font-size:.82rem;color:var(--ink-2)">Decided: {level_pill(level)} '
+        + (f'via <b>{esc(chosen)}</b>' if chosen else "no rule matched")
+        + "</div>"
+    )
+    return f'<div class="mt-card">{"".join(rows)}{dropped}{upgrades}{final}</div>'
