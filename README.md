@@ -14,6 +14,23 @@ Meantime is the agent that lives in that gap. It has already read his discharge 
 
 ---
 
+## The interface
+
+Two views over the same session, switched at the top.
+
+**Conversation** is the product: chat, with a sidebar that pins the urgency badge and keeps everything else one click away — why this answer (the rules that fired, with their sources), the possibilities list, the full record, the actions taken.
+
+**Dashboard** is the case for the system. It answers the question a judge, a surgeon or a compliance reviewer actually asks: *what can this thing say, and where did it get it from?*
+
+- **Where Robert is · Current verdict · Escalations to a human · Rules in force** — the session in four numbers.
+- **The arc** — the three phases, with how many rules are live in each. The current one is marked.
+- **Rules that can fire right now** — all 31 of them for this phase, ranked by severity, each with its rationale, its triggers and a source chip. Nothing is hidden behind the model.
+- **Evidence base** — every source, with how many rules cite it and a link to the original.
+- **Care team inbox** — the actual messages the humans received, with who got them and how fast.
+- **Session activity** — every tool call in order.
+
+---
+
 ## Three phases, one architecture
 
 The same worry arrives at three different points, and the right answer is different at each. Meantime covers all three with one engine and one rule file.

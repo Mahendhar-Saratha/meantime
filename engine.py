@@ -22,6 +22,16 @@ LEVEL_RANK = {
     "EMERGENCY": 4,
 }
 
+# Location words the engine will recognise inside a symptom's `location` field.
+KNOWN_SITES = ("calf", "knee", "thigh", "shin", "incision")
+
+# The three points in the arc this covers. A rule states which it belongs to;
+# "any" means it holds in all of them (chest pain does not care what stage of
+# treatment you are at).
+PHASES = ("no_procedure", "pre_op", "post_op")
+DEFAULT_PHASE = "post_op"
+
+
 # The patient-facing action for each level. The rule supplies the nuance; this
 # supplies the instruction, identically every time. Who you call changes with
 # the phase - a patient waiting for surgery calls scheduling, and a patient with
@@ -60,16 +70,6 @@ def level_action(level: str, phase: str, ctx: dict) -> str:
         scheduler=ctx.get("scheduler_phone") or "surgical scheduling",
         primary_care=(ctx.get("primary_care") or {}).get("phone") or "your GP practice",
     )
-
-# Location words the engine will recognise inside a symptom's `location` field.
-KNOWN_SITES = ("calf", "knee", "thigh", "shin", "incision")
-
-# The three points in the arc this covers. A rule states which it belongs to;
-# "any" means it holds in all of them (chest pain does not care what stage of
-# treatment you are at).
-PHASES = ("no_procedure", "pre_op", "post_op")
-DEFAULT_PHASE = "post_op"
-
 
 def rank(level: str) -> int:
     return LEVEL_RANK.get(level, 0)
@@ -122,7 +122,8 @@ def _condition(cond: str, ctx: dict, report: dict, names: set[str]) -> bool:
     raise ValueError(f"unknown modifier condition: {cond!r}")
 
 
-def _applies_in_phase(rule: dict, phase: str) -> bool:
+def applies_in_phase(rule: dict, phase: str) -> bool:
+    """Does this rule hold at this point in the patient's arc?"""
     declared = rule.get("phase", DEFAULT_PHASE)
     if isinstance(declared, str):
         declared = [declared]
@@ -187,7 +188,7 @@ def assess(report: dict, ctx: dict, rules: list[dict]) -> dict:
     for rule in rules:
         if rule.get("applies_to") not in ("general", ctx.get("procedure_code")):
             continue
-        if not _applies_in_phase(rule, phase):
+        if not applies_in_phase(rule, phase):
             continue
         if not (set(rule["triggers"]) & names):
             continue
@@ -222,6 +223,15 @@ def assess(report: dict, ctx: dict, rules: list[dict]) -> dict:
     # file. sorted() is stable, so EMERGENCY rules stay ahead of everything.
     ordered = sorted(high, key=lambda m: -rank(m["level"]))
     return _assessment(ordered[0]["level"], ordered, "high", ctx)
+
+
+def rules_for_phase(rules: list[dict], phase: str, procedure_code: str | None) -> list[dict]:
+    """Every rule that could fire right now. Used by the dashboard."""
+    return [
+        r
+        for r in rules
+        if r.get("applies_to") in ("general", procedure_code) and applies_in_phase(r, phase)
+    ]
 
 
 def possibilities(report: dict, conditions: list[dict], limit: int = 4) -> list[dict]:

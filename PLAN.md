@@ -17,7 +17,8 @@ This document is the complete specification for a six-hour solo hackathon build.
 > 7. **`LEVEL_ACTIONS` is keyed by phase**, and the prompt's level-action lines are generated from `engine.level_action()`, so the badge and the prompt cannot drift apart. Who you call changes with the phase: on-call surgeon, surgical scheduling, or a GP.
 > 8. **`data/scheduled_procedure.json` and `data/conditions.json`** — the pre-op booking record (mirroring the discharge summary's shape) and the curated possibilities list. `get_patient_context(phase=...)` merges the right one onto the baseline. Pre-op "today" is pinned by `demo_days_until_surgery`, so the countdown is identical on every run.
 > 9. **The "always assess" invariant moved from the prompt into the loop.** Prompt rule 7 failed twice in live testing — once on a hot swollen knee with a fever, where the model asked a clarifying question and ended the turn with no verdict at all. `run_turn` now checks `needs_assessment(events)` and sends the model back if the rules were never run. A safety invariant enforced only by prose is not enforced.
-> 10. **No `MONITOR` rule exists for `no_procedure`**, deliberately. Without a procedure and without a clinician's baseline, "this is expected, do nothing" is not a statement this system is entitled to make. The floor there is "book a GP appointment."
+> 10. **A `ui.py` design layer and a Dashboard view.** Brand (wordmark, mark, `Precision triage for the gap between appointments`), source monogram badges drawn in CSS rather than fetched so the demo never depends on someone else's CDN, and a second view showing the rule library in force, the evidence base with per-source rule counts, the care-team inbox and session activity. The care-team view was stretch goal 3; it is now the Dashboard's inbox panel.
+> 11. **No `MONITOR` rule exists for `no_procedure`**, deliberately. Without a procedure and without a clinician's baseline, "this is expected, do nothing" is not a statement this system is entitled to make. The floor there is "book a GP appointment."
 
 ---
 
@@ -86,7 +87,8 @@ meantime/
 ├── engine.py                rule engine + decision policy (pure functions, no I/O)
 ├── tools.py                 tool implementations + TOOL_SCHEMAS list for the API
 ├── agent.py                 system prompt, tool loop, run_turn()
-├── app.py                   Streamlit UI
+├── app.py                   Streamlit UI (layout: Conversation + Dashboard)
+├── ui.py                    design tokens, chrome, HTML components
 └── tests/
     └── test_engine.py       the 8 cases in section 8.4
 ```
