@@ -23,17 +23,52 @@ LEVEL_RANK = {
 }
 
 # The patient-facing action for each level. The rule supplies the nuance; this
-# supplies the instruction, identically every time.
+# supplies the instruction, identically every time. Who you call changes with
+# the phase - a patient waiting for surgery calls scheduling, and a patient with
+# no procedure at all has no care team to message.
 LEVEL_ACTIONS = {
-    "EMERGENCY": "Call 911 now. Do not drive yourself.",
-    "URGENT": "Call the surgeon's on-call line now at 616-555-0199, or go to urgent care or the ER today.",
-    "CONTACT_TEAM": "I am sending a message to your care team. They will call you within 24 to 48 hours.",
-    "MONITOR": "This is expected recovery. Use the self-care below, and come back to me if anything on the watch list happens.",
-    "UNCERTAIN": "I cannot tell from here. Please call the nurse helpline at 616-555-0142.",
+    "post_op": {
+        "EMERGENCY": "Call 911 now. Do not drive yourself.",
+        "URGENT": "Call the surgeon's on-call line now at {on_call}, or go to urgent care or the ER today.",
+        "CONTACT_TEAM": "I am sending a message to your care team. They will call you within 24 to 48 hours.",
+        "MONITOR": "This is expected recovery. Use the self-care below, and come back to me if anything on the watch list happens.",
+        "UNCERTAIN": "I cannot tell from here. Please call the nurse helpline at {helpline}.",
+    },
+    "pre_op": {
+        "EMERGENCY": "Call 911 now. Do not drive yourself.",
+        "URGENT": "Call surgical scheduling now at {scheduler}. Your operation may need to be moved, and that is their decision to make, not something to leave until the day.",
+        "CONTACT_TEAM": "I am sending a message to the surgical team. They will call you within 24 to 48 hours, well before your operation.",
+        "MONITOR": "This is expected in the run-up to surgery. Use the advice below, and come back to me if anything on the watch list happens.",
+        "UNCERTAIN": "I cannot tell from here. Please call the nurse helpline at {helpline}, or surgical scheduling at {scheduler}.",
+    },
+    "no_procedure": {
+        "EMERGENCY": "Call 911 now. Do not drive yourself.",
+        "URGENT": "Go to urgent care or an emergency department today.",
+        "CONTACT_TEAM": "Book an appointment with your GP. I can write down what you have told me so you can take it with you.",
+        "MONITOR": "This is worth keeping an eye on rather than acting on today.",
+        "UNCERTAIN": "I cannot tell from here. Please call your GP practice at {primary_care} and describe it in your own words.",
+    },
 }
+
+
+def level_action(level: str, phase: str, ctx: dict) -> str:
+    """The instruction for a level, with this patient's phone numbers filled in."""
+    template = LEVEL_ACTIONS.get(phase, LEVEL_ACTIONS[DEFAULT_PHASE])[level]
+    return template.format(
+        on_call=ctx.get("on_call") or "the on-call line",
+        helpline=ctx.get("helpline") or "the nurse helpline",
+        scheduler=ctx.get("scheduler_phone") or "surgical scheduling",
+        primary_care=(ctx.get("primary_care") or {}).get("phone") or "your GP practice",
+    )
 
 # Location words the engine will recognise inside a symptom's `location` field.
 KNOWN_SITES = ("calf", "knee", "thigh", "shin", "incision")
+
+# The three points in the arc this covers. A rule states which it belongs to;
+# "any" means it holds in all of them (chest pain does not care what stage of
+# treatment you are at).
+PHASES = ("no_procedure", "pre_op", "post_op")
+DEFAULT_PHASE = "post_op"
 
 
 def rank(level: str) -> int:
@@ -87,6 +122,13 @@ def _condition(cond: str, ctx: dict, report: dict, names: set[str]) -> bool:
     raise ValueError(f"unknown modifier condition: {cond!r}")
 
 
+def _applies_in_phase(rule: dict, phase: str) -> bool:
+    declared = rule.get("phase", DEFAULT_PHASE)
+    if isinstance(declared, str):
+        declared = [declared]
+    return "any" in declared or phase in declared
+
+
 def _match_to_dict(rule: dict, level: str, confidence: str) -> dict:
     return {
         "id": rule["id"],
@@ -102,6 +144,8 @@ def _match_to_dict(rule: dict, level: str, confidence: str) -> dict:
 
 
 def _assessment(level: str, matched: list[dict], confidence: str, ctx: dict) -> dict:
+    phase = ctx.get("phase") or DEFAULT_PHASE
+
     actions: list[str] = []
     if rank(level) >= 2:
         actions.append("message_care_team")
@@ -114,7 +158,8 @@ def _assessment(level: str, matched: list[dict], confidence: str, ctx: dict) -> 
 
     return {
         "level": level,
-        "level_action": LEVEL_ACTIONS[level],
+        "phase": phase,
+        "level_action": level_action(level, phase, ctx),
         "confidence": confidence,
         "top_rule": matched[0]["id"] if (matched and level != "UNCERTAIN") else None,
         "matched": matched,
@@ -136,9 +181,13 @@ def assess(report: dict, ctx: dict, rules: list[dict]) -> dict:
     names = {s.get("name") for s in symptoms if s.get("name")}
     quals = set(report.get("qualifiers") or []) | derive_qualifiers(report)
 
+    phase = ctx.get("phase") or DEFAULT_PHASE
+
     matches: list[dict] = []
     for rule in rules:
         if rule.get("applies_to") not in ("general", ctx.get("procedure_code")):
+            continue
+        if not _applies_in_phase(rule, phase):
             continue
         if not (set(rule["triggers"]) & names):
             continue
@@ -173,3 +222,42 @@ def assess(report: dict, ctx: dict, rules: list[dict]) -> dict:
     # file. sorted() is stable, so EMERGENCY rules stay ahead of everything.
     ordered = sorted(high, key=lambda m: -rank(m["level"]))
     return _assessment(ordered[0]["level"], ordered, "high", ctx)
+
+
+def possibilities(report: dict, conditions: list[dict], limit: int = 4) -> list[dict]:
+    """Curated things a knee complaint could be, for a patient with no procedure.
+
+    This is deliberately NOT a diagnosis and carries no probability. A condition
+    is listed when it involves something the patient described; the ordering is
+    by how much of what they described it involves, nothing more. The
+    more_likely_if / less_likely_if lines are handed to the patient as the
+    questions a clinician would use to tell these apart - the software never
+    evaluates them, because it cannot.
+    """
+    names = {s.get("name") for s in report.get("symptoms") or [] if s.get("name")}
+    if not names:
+        return []
+
+    scored: list[dict] = []
+    for condition in conditions:
+        overlap = set(condition["triggers"]) & names
+        if not overlap:
+            continue
+        scored.append(
+            {
+                "id": condition["id"],
+                "name": condition["name"],
+                "plain": condition["plain"],
+                "matched_symptoms": sorted(overlap),
+                "match_count": len(overlap),
+                "more_likely_if": condition["more_likely_if"],
+                "less_likely_if": condition["less_likely_if"],
+                "next_step": condition["next_step"],
+                "source": condition["source"],
+                "source_url": condition.get("source_url"),
+            }
+        )
+
+    # sorted() is stable, so equal match counts keep the order of the file.
+    scored.sort(key=lambda c: -c["match_count"])
+    return scored[:limit]

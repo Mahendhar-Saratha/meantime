@@ -180,3 +180,118 @@ def test_every_escalation_reaches_a_human(level):
     r = assess(report([sx(trigger)]), CTX, RULES)
     assert r["level"] == level
     assert "message_care_team" in r["actions_required"]
+
+
+# --- phases -------------------------------------------------------------
+
+import engine as _engine  # noqa: E402
+
+CONDITIONS = json.load(
+    open(
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "conditions.json"),
+        encoding="utf-8",
+    )
+)["conditions"]
+
+PRE_OP_CTX = dict(
+    CTX, phase="pre_op", on_anticoagulant=False, on_opioid=False, post_op_day=None, scheduler_phone="616-555-0150"
+)
+NO_PROC_CTX = {
+    "phase": "no_procedure",
+    "procedure_code": None,
+    "helpline": "616-555-0142",
+    "primary_care": {"phone": "616-555-0120"},
+}
+
+
+def test_emergencies_fire_in_every_phase():
+    """Chest pain does not care what stage of treatment you are at."""
+    for ctx in (dict(CTX, phase="post_op"), PRE_OP_CTX, NO_PROC_CTX):
+        r = assess(report([sx("chest_pain")]), ctx, RULES)
+        assert r["level"] == "EMERGENCY", ctx["phase"]
+        assert r["top_rule"] == "G1"
+
+
+def test_post_op_rules_do_not_fire_before_surgery():
+    """K1 is about a leg that has been operated on. It must not fire pre-op."""
+    r = assess(report([sx("calf_pain")], qualifiers=["location:calf"]), PRE_OP_CTX, RULES)
+    assert "K1" not in ids(r)
+
+
+def test_infection_before_surgery_is_urgent():
+    r = assess(report([sx("sore_throat"), sx("fever")], temp_f=100.4), PRE_OP_CTX, RULES)
+    assert r["level"] == "URGENT"
+    assert r["top_rule"] == "P1"
+    assert "message_care_team" in r["actions_required"]
+
+
+def test_breaking_the_fast_is_urgent_not_embarrassing():
+    r = assess(report([sx("ate_after_cutoff")]), PRE_OP_CTX, RULES)
+    assert r["level"] == "URGENT"
+    assert r["top_rule"] == "P5"
+
+
+def test_the_same_symptom_answers_differently_by_phase():
+    """Aching, stiff knee: expected while waiting, expected after surgery, and
+    worth a GP visit when nobody has ever assessed it."""
+    r = report([sx("knee_pain"), sx("stiffness")])
+    assert assess(r, PRE_OP_CTX, RULES)["top_rule"] == "P10"
+    assert assess(r, dict(CTX, phase="post_op"), RULES)["top_rule"] == "M7"
+    assert assess(r, NO_PROC_CTX, RULES)["level"] == "CONTACT_TEAM"
+
+
+def test_hot_swollen_knee_with_fever_escalates_without_a_procedure():
+    mild = assess(report([sx("knee_warmth"), sx("knee_swelling")]), NO_PROC_CTX, RULES)
+    assert mild["level"] == "CONTACT_TEAM"
+    febrile = assess(report([sx("knee_warmth"), sx("knee_swelling"), sx("fever")]), NO_PROC_CTX, RULES)
+    assert febrile["level"] == "URGENT"
+
+
+def test_level_action_names_the_right_contact_for_the_phase():
+    assert "616-555-0199" in _engine.level_action("URGENT", "post_op", CTX)
+    assert "616-555-0150" in _engine.level_action("URGENT", "pre_op", PRE_OP_CTX)
+    assert "urgent care" in _engine.level_action("URGENT", "no_procedure", NO_PROC_CTX)
+    assert "616-555-0120" in _engine.level_action("UNCERTAIN", "no_procedure", NO_PROC_CTX)
+
+
+# --- possibilities ------------------------------------------------------
+
+
+def test_possibilities_are_ordered_by_overlap_not_by_likelihood():
+    found = _engine.possibilities(report([sx("knee_pain"), sx("stiffness"), sx("pain_on_stairs")]), CONDITIONS)
+    assert found[0]["id"] == "C1"
+    assert found[0]["match_count"] == 3
+    assert [c["match_count"] for c in found] == sorted((c["match_count"] for c in found), reverse=True)
+
+
+def test_possibilities_returns_nothing_for_an_empty_report():
+    assert _engine.possibilities(report([]), CONDITIONS) == []
+
+
+def test_possibilities_never_claims_a_probability():
+    """No field in the output may look like a likelihood the software computed."""
+    found = _engine.possibilities(report([sx("knee_pain")]), CONDITIONS)
+    assert found
+    for candidate in found:
+        assert not {"probability", "likelihood", "confidence", "score"} & set(candidate)
+        assert candidate["more_likely_if"] and candidate["less_likely_if"]
+        assert candidate["next_step"] and candidate["source"]
+
+
+def test_every_rule_declares_a_phase_the_engine_knows():
+    for rule in RULES:
+        declared = rule["phase"]
+        declared = [declared] if isinstance(declared, str) else declared
+        for phase in declared:
+            assert phase == "any" or phase in _engine.PHASES, (rule["id"], phase)
+
+
+# --- the "always assess" invariant is enforced in code, not just the prompt ---
+
+
+def test_needs_assessment_detects_a_turn_with_no_verdict():
+    from agent import needs_assessment
+
+    assert needs_assessment([])
+    assert needs_assessment([{"tool": "log_symptom", "output": {}}])
+    assert not needs_assessment([{"tool": "assess_urgency", "output": {"level": "MONITOR"}}])

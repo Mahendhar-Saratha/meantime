@@ -1,0 +1,34 @@
+{
+  "patient_id": "P-1001",
+  "booking_id": "B-40118",
+  "procedure": "Right total knee arthroplasty",
+  "procedure_code": "tka",
+  "laterality": "right",
+  "surgery_date": "2026-09-08",
+  "arrival_time": "05:45",
+  "hospital": "Medical Mile Orthopaedic Center",
+  "demo_days_until_surgery": 6,
+  "surgeon": {"name": "Dr. Marcus Ellery", "practice": "Medical Mile Orthopaedic Center", "office_phone": "616-555-0150", "on_call_phone": "616-555-0199"},
+  "scheduler": {"name": "Surgical scheduling", "phone": "616-555-0150"},
+  "pre_op_appointments": [
+    {"type": "Pre-operative assessment", "with": "Pre-op clinic nurse", "date": "2026-09-03"},
+    {"type": "Joint replacement class", "with": "River City PT", "date": "2026-09-04", "note": "bring a family member"}
+  ],
+  "preparation": {
+    "fasting": "Nothing to eat after midnight the night before. Clear fluids until 4 hours before your arrival time.",
+    "medications": "Take lisinopril and atorvastatin as normal. Hold metformin on the morning of surgery. Stop ibuprofen and any other anti-inflammatory 7 days before. Stop fish oil and vitamin E 7 days before.",
+    "skin": "Shower with the chlorhexidine wash the night before and again the morning of surgery. Do not shave the leg - a shaving nick is a way in for bacteria.",
+    "home": "Clear trip hazards and loose rugs, put a chair with arms where you will spend most of your day, and arrange for someone to be home for the first 48 hours.",
+    "bring": "A walker if you already have one, a written list of your medicines, loose clothes and flat shoes."
+  },
+  "warning_list": [
+    "Call scheduling at 616-555-0150 if you develop a fever, a cold, a cough or a sore throat in the week before surgery. Operations are often postponed for this, and that is safer than going ahead.",
+    "Call if you get any cut, scrape, rash, sore or infected nail on the leg being operated on.",
+    "Call if you have a toothache or a dental abscess. Dental infection is treated before joint replacement, not after.",
+    "Call if you have burning or frequency when passing urine.",
+    "Call if you have not managed to stop a medicine you were told to stop, or you stopped one you were told to keep taking.",
+    "Call if you eat or drink after the cutoff. Do not simply arrive and say nothing.",
+    "Call if you fall or injure yourself before the operation.",
+    "Call if your blood sugar has been running higher than usual."
+  ]
+}

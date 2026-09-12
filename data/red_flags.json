@@ -1,282 +1,961 @@
 {
   "version": "1.0",
-  "note": "Curated post-operative warning rules adapted from public patient-education material. Not clinically validated. Demo use only.",
+  "note": "Curated warning rules for three phases of care - before any procedure, before a booked procedure, and after discharge. Adapted from public patient-education material. Not clinically validated. Demo use only.",
   "sources": {
-    "MP": {"name": "MedlinePlus - Knee joint replacement: discharge (NIH/NLM)", "url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"},
-    "NHS": {"name": "NHS - Post knee replacement symptom checker (Dorset County Hospital NHS FT) and NHS recovery guidance", "url": "https://dchft.nhs.uk/leaflets/post-knee-replacement-symptom-checker/"},
-    "AAOS": {"name": "AAOS OrthoInfo - Total Knee Replacement", "url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"},
-    "DC": {"name": "This patient's own discharge summary warning list", "url": null},
-    "CRISIS": {"name": "988 Suicide & Crisis Lifeline", "url": "https://988lifeline.org/"}
+    "MP": {
+      "name": "MedlinePlus - Knee joint replacement: discharge (NIH/NLM)",
+      "url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+    },
+    "NHS": {
+      "name": "NHS - Post knee replacement symptom checker (Dorset County Hospital NHS FT) and NHS recovery guidance",
+      "url": "https://dchft.nhs.uk/leaflets/post-knee-replacement-symptom-checker/"
+    },
+    "AAOS": {
+      "name": "AAOS OrthoInfo - Total Knee Replacement",
+      "url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+    },
+    "DC": {
+      "name": "This patient's own discharge summary warning list",
+      "url": null
+    },
+    "CRISIS": {
+      "name": "988 Suicide & Crisis Lifeline",
+      "url": "https://988lifeline.org/"
+    }
   },
   "qualifiers": [
-    "location:calf", "location:knee", "location:thigh", "location:shin", "location:incision",
-    "one_sided", "both_sides", "temp_reading_given", "pressure_applied_10min"
+    "location:calf",
+    "location:knee",
+    "location:thigh",
+    "location:shin",
+    "location:incision",
+    "one_sided",
+    "both_sides",
+    "temp_reading_given",
+    "pressure_applied_10min"
   ],
   "vocabulary": [
-    "chest_pain", "chest_pressure", "chest_tightness", "shortness_of_breath", "difficulty_breathing", "coughing_blood",
-    "fainting", "severe_dizziness", "rapid_or_irregular_heartbeat", "face_droop", "arm_weakness", "speech_difficulty",
-    "sudden_confusion", "severe_headache", "swelling_face_lips_tongue", "throat_tightness", "suicidal_thoughts",
-    "self_harm_thoughts", "vomiting_blood", "black_stool", "bleeding_not_stopping", "bleeding_soaking_dressing",
-    "calf_pain", "calf_swelling", "calf_warmth", "calf_tenderness", "leg_swelling_one_sided", "leg_swelling_mild",
-    "knee_swelling", "thigh_swelling", "shin_swelling", "knee_warmth", "bruising",
-    "fever", "chills", "low_grade_temp",
-    "wound_drainage_purulent", "wound_drainage_increasing", "wound_drainage_clear_small", "wound_opening",
-    "wound_redness_spreading", "wound_redness_mild", "wound_hot", "red_streaks",
-    "foot_cold", "foot_pale_or_blue", "foot_numb", "cannot_move_foot",
-    "fall", "cannot_bear_weight", "knee_deformity", "sudden_severe_knee_pain", "pain_uncontrolled",
-    "constipation", "vomiting", "nausea_mild", "cannot_keep_fluids_down", "drowsiness", "missed_anticoagulant_dose",
-    "rash", "itching_widespread", "hives",
-    "incision_itching", "incision_tightness", "numbness_near_scar", "stiffness", "clicking", "difficulty_bending",
-    "low_mood", "anxiety_about_recovery", "poor_sleep"
+    "chest_pain",
+    "chest_pressure",
+    "chest_tightness",
+    "shortness_of_breath",
+    "difficulty_breathing",
+    "coughing_blood",
+    "fainting",
+    "severe_dizziness",
+    "rapid_or_irregular_heartbeat",
+    "face_droop",
+    "arm_weakness",
+    "speech_difficulty",
+    "sudden_confusion",
+    "severe_headache",
+    "swelling_face_lips_tongue",
+    "throat_tightness",
+    "suicidal_thoughts",
+    "self_harm_thoughts",
+    "vomiting_blood",
+    "black_stool",
+    "bleeding_not_stopping",
+    "bleeding_soaking_dressing",
+    "calf_pain",
+    "calf_swelling",
+    "calf_warmth",
+    "calf_tenderness",
+    "leg_swelling_one_sided",
+    "leg_swelling_mild",
+    "knee_swelling",
+    "thigh_swelling",
+    "shin_swelling",
+    "knee_warmth",
+    "bruising",
+    "fever",
+    "chills",
+    "low_grade_temp",
+    "wound_drainage_purulent",
+    "wound_drainage_increasing",
+    "wound_drainage_clear_small",
+    "wound_opening",
+    "wound_redness_spreading",
+    "wound_redness_mild",
+    "wound_hot",
+    "red_streaks",
+    "foot_cold",
+    "foot_pale_or_blue",
+    "foot_numb",
+    "cannot_move_foot",
+    "fall",
+    "cannot_bear_weight",
+    "knee_deformity",
+    "sudden_severe_knee_pain",
+    "pain_uncontrolled",
+    "constipation",
+    "vomiting",
+    "nausea_mild",
+    "cannot_keep_fluids_down",
+    "drowsiness",
+    "missed_anticoagulant_dose",
+    "rash",
+    "itching_widespread",
+    "hives",
+    "incision_itching",
+    "incision_tightness",
+    "numbness_near_scar",
+    "stiffness",
+    "clicking",
+    "difficulty_bending",
+    "low_mood",
+    "anxiety_about_recovery",
+    "poor_sleep",
+    "sore_throat",
+    "cold_symptoms",
+    "cough",
+    "productive_cough",
+    "skin_break_near_site",
+    "skin_infection",
+    "ingrown_nail",
+    "athletes_foot",
+    "toothache",
+    "dental_abscess",
+    "urinary_burning",
+    "urinary_frequency",
+    "medication_not_stopped",
+    "ate_after_cutoff",
+    "new_injury",
+    "high_blood_sugar",
+    "pre_op_anxiety",
+    "knee_pain",
+    "knee_locking",
+    "knee_catching",
+    "knee_giving_way",
+    "knee_instability",
+    "pain_on_stairs"
   ],
   "rules": [
     {
-      "id": "G1", "applies_to": "general", "level": "EMERGENCY",
-      "triggers": ["chest_pain", "chest_pressure", "chest_tightness"],
-      "rationale": "After surgery, chest pain or pressure can be a sign of a clot that has travelled to the lungs, or a heart problem. It needs emergency care.",
+      "id": "G1",
+      "applies_to": "general",
+      "phase": "any",
+      "level": "EMERGENCY",
+      "triggers": [
+        "chest_pain",
+        "chest_pressure",
+        "chest_tightness"
+      ],
+      "rationale": "Chest pain or pressure can be a sign of a heart problem, or of a clot that has travelled to the lungs. After surgery that clot risk is higher. Either way it needs emergency care.",
       "action": "Call 911 now. Do not drive yourself. Sit down and stay with someone if you can.",
-      "source": "MP,NHS", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "source": "MP,NHS",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
     {
-      "id": "G2", "applies_to": "general", "level": "EMERGENCY",
-      "triggers": ["shortness_of_breath", "difficulty_breathing"],
-      "rationale": "New trouble breathing after surgery can mean a clot in the lungs.",
+      "id": "G2",
+      "applies_to": "general",
+      "phase": "any",
+      "level": "EMERGENCY",
+      "triggers": [
+        "shortness_of_breath",
+        "difficulty_breathing"
+      ],
+      "rationale": "New trouble breathing can mean a clot in the lungs, and the risk of that is higher in the weeks after surgery.",
       "action": "Call 911 now. Do not drive yourself.",
-      "source": "MP,NHS", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "source": "MP,NHS",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
     {
-      "id": "G3", "applies_to": "general", "level": "EMERGENCY",
-      "triggers": ["coughing_blood"],
-      "rationale": "Coughing up blood after surgery is treated as a clot in the lungs until a doctor proves otherwise.",
+      "id": "G3",
+      "applies_to": "general",
+      "phase": "any",
+      "level": "EMERGENCY",
+      "triggers": [
+        "coughing_blood"
+      ],
+      "rationale": "Coughing up blood is treated as a clot in the lungs until a doctor proves otherwise.",
       "action": "Call 911 now.",
-      "source": "NHS,DC", "source_url": "https://dchft.nhs.uk/leaflets/post-knee-replacement-symptom-checker/"
+      "source": "NHS,DC",
+      "source_url": "https://dchft.nhs.uk/leaflets/post-knee-replacement-symptom-checker/"
     },
     {
-      "id": "G4", "applies_to": "general", "level": "EMERGENCY",
-      "triggers": ["fainting", "severe_dizziness", "rapid_or_irregular_heartbeat"],
+      "id": "G4",
+      "applies_to": "general",
+      "phase": "any",
+      "level": "EMERGENCY",
+      "triggers": [
+        "fainting",
+        "severe_dizziness",
+        "rapid_or_irregular_heartbeat"
+      ],
       "rationale": "Passing out, or a racing or irregular heartbeat, can come with a clot in the lungs or with serious bleeding.",
       "action": "Call 911 now. Lie down with your legs up while you wait.",
-      "source": "NHS", "source_url": "https://dchft.nhs.uk/leaflets/post-knee-replacement-symptom-checker/"
+      "source": "NHS",
+      "source_url": "https://dchft.nhs.uk/leaflets/post-knee-replacement-symptom-checker/"
     },
     {
-      "id": "G5", "applies_to": "general", "level": "EMERGENCY",
-      "triggers": ["face_droop", "arm_weakness", "speech_difficulty", "sudden_confusion", "severe_headache"],
-      "rationale": "These can be signs of a stroke or of bleeding in the brain, and blood thinners raise that risk.",
+      "id": "G5",
+      "applies_to": "general",
+      "phase": "any",
+      "level": "EMERGENCY",
+      "triggers": [
+        "face_droop",
+        "arm_weakness",
+        "speech_difficulty",
+        "sudden_confusion",
+        "severe_headache"
+      ],
+      "rationale": "These can be signs of a stroke or of bleeding in the brain. Blood thinners raise that risk.",
       "action": "Call 911 now. Note the time the symptoms started and tell the crew.",
-      "source": "NHS", "source_url": "https://dchft.nhs.uk/leaflets/post-knee-replacement-symptom-checker/"
+      "source": "NHS",
+      "source_url": "https://dchft.nhs.uk/leaflets/post-knee-replacement-symptom-checker/"
     },
     {
-      "id": "G6", "applies_to": "general", "level": "EMERGENCY",
-      "triggers": ["swelling_face_lips_tongue", "throat_tightness"],
+      "id": "G6",
+      "applies_to": "general",
+      "phase": "any",
+      "level": "EMERGENCY",
+      "triggers": [
+        "swelling_face_lips_tongue",
+        "throat_tightness"
+      ],
       "rationale": "Swelling of the face, lips or throat can be a severe allergic reaction, including to a new medicine.",
       "action": "Call 911 now. Stop the medicine you most recently started and bring the bottle with you.",
-      "source": "MP", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "source": "MP",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
     {
-      "id": "G7", "applies_to": "general", "level": "EMERGENCY",
-      "triggers": ["suicidal_thoughts", "self_harm_thoughts"],
+      "id": "G7",
+      "applies_to": "general",
+      "phase": "any",
+      "level": "EMERGENCY",
+      "triggers": [
+        "suicidal_thoughts",
+        "self_harm_thoughts"
+      ],
       "rationale": "Thoughts of harming yourself need support from a person right now, not from a screen.",
       "action": "Call or text 988 (Suicide & Crisis Lifeline) now, or call 911 if you are in immediate danger. Stay with someone if you can.",
-      "source": "CRISIS", "source_url": "https://988lifeline.org/"
+      "source": "CRISIS",
+      "source_url": "https://988lifeline.org/"
     },
     {
-      "id": "G8", "applies_to": "general", "level": "URGENT",
-      "triggers": ["vomiting_blood", "black_stool"],
-      "modifiers": [{"if": "on_anticoagulant", "level": "EMERGENCY"}],
+      "id": "G8",
+      "applies_to": "general",
+      "phase": "any",
+      "level": "URGENT",
+      "triggers": [
+        "vomiting_blood",
+        "black_stool"
+      ],
+      "modifiers": [
+        {
+          "if": "on_anticoagulant",
+          "level": "EMERGENCY"
+        }
+      ],
       "rationale": "Blood in vomit, or black tarry stools, mean bleeding in the stomach or gut. On a blood thinner that is an emergency.",
       "action": "Do not take another dose of your blood thinner until a clinician tells you to.",
-      "source": "NHS", "source_url": "https://dchft.nhs.uk/leaflets/post-knee-replacement-symptom-checker/"
+      "source": "NHS",
+      "source_url": "https://dchft.nhs.uk/leaflets/post-knee-replacement-symptom-checker/"
     },
     {
-      "id": "G9", "applies_to": "general", "level": "URGENT",
-      "triggers": ["bleeding_not_stopping"],
-      "modifiers": [{"if": "on_anticoagulant", "level": "EMERGENCY"}],
+      "id": "G9",
+      "applies_to": "general",
+      "phase": "any",
+      "level": "URGENT",
+      "triggers": [
+        "bleeding_not_stopping"
+      ],
+      "modifiers": [
+        {
+          "if": "on_anticoagulant",
+          "level": "EMERGENCY"
+        }
+      ],
       "rationale": "Bleeding that will not stop after 10 minutes of firm pressure needs care now. On a blood thinner, it is an emergency.",
       "action": "Keep firm pressure on the spot and keep the leg raised while you call.",
-      "source": "MP,DC", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "source": "MP,DC",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
-
     {
-      "id": "K1", "applies_to": "tka", "level": "URGENT",
-      "triggers": ["calf_pain", "calf_swelling", "calf_warmth", "calf_tenderness", "leg_swelling_one_sided"],
-      "requires": ["location:calf", "one_sided"],
+      "id": "K1",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "URGENT",
+      "triggers": [
+        "calf_pain",
+        "calf_swelling",
+        "calf_warmth",
+        "calf_tenderness",
+        "leg_swelling_one_sided"
+      ],
+      "requires": [
+        "location:calf",
+        "one_sided"
+      ],
       "rationale": "Pain, swelling, warmth or tenderness in the calf after knee surgery can be a blood clot in the leg. You are already on a blood thinner to prevent this, which is exactly why it gets checked the same day.",
       "action": "Call the surgeon's on-call line now at 616-555-0199. Do not rub or massage the calf, and do not try to walk it off.",
-      "source": "MP,NHS,AAOS", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "source": "MP,NHS,AAOS",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
     {
-      "id": "K2", "applies_to": "tka", "level": "CONTACT_TEAM",
-      "triggers": ["fever", "chills"],
-      "requires": ["temp_reading_given"],
+      "id": "K2",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "CONTACT_TEAM",
+      "triggers": [
+        "fever",
+        "chills"
+      ],
+      "requires": [
+        "temp_reading_given"
+      ],
       "modifiers": [
-        {"if": "temp_f_ge_101", "level": "URGENT"},
-        {"if": "has_symptom:chills", "level": "URGENT"}
+        {
+          "if": "temp_f_ge_101",
+          "level": "URGENT"
+        },
+        {
+          "if": "has_symptom:chills",
+          "level": "URGENT"
+        }
       ],
       "rationale": "A temperature above 101F after joint surgery can mean infection, and infection near a new joint is treated quickly.",
       "action": "Take your temperature now and write down the number and the time. Keep taking it every 4 hours.",
-      "source": "MP", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "source": "MP",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
     {
-      "id": "K3", "applies_to": "tka", "level": "URGENT",
-      "triggers": ["wound_drainage_purulent", "wound_opening", "wound_drainage_increasing"],
+      "id": "K3",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "URGENT",
+      "triggers": [
+        "wound_drainage_purulent",
+        "wound_opening",
+        "wound_drainage_increasing"
+      ],
       "rationale": "Cloudy, coloured or bad-smelling drainage, drainage that is increasing, or a wound that is opening, are signs of infection at the new joint.",
       "action": "Call the surgeon's on-call line now at 616-555-0199. Do not put ointment on it. Take a photo of the incision to show them.",
-      "source": "MP,NHS", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "source": "MP,NHS",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
     {
-      "id": "K4", "applies_to": "tka", "level": "URGENT",
-      "triggers": ["wound_redness_spreading", "red_streaks", "wound_hot"],
+      "id": "K4",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "URGENT",
+      "triggers": [
+        "wound_redness_spreading",
+        "red_streaks",
+        "wound_hot"
+      ],
       "rationale": "Redness that spreads away from the incision, red streaks, or a wound that feels hot can mean a spreading infection.",
       "action": "Call the surgeon's on-call line now at 616-555-0199. Draw a line around the edge of the redness with a pen so they can see whether it is moving.",
-      "source": "MP,NHS", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "source": "MP,NHS",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
     {
-      "id": "K5", "applies_to": "tka", "level": "URGENT",
-      "triggers": ["bleeding_soaking_dressing"],
-      "modifiers": [{"if": ["on_anticoagulant", "has_symptom:bleeding_not_stopping"], "level": "EMERGENCY"}],
+      "id": "K5",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "URGENT",
+      "triggers": [
+        "bleeding_soaking_dressing"
+      ],
+      "modifiers": [
+        {
+          "if": [
+            "on_anticoagulant",
+            "has_symptom:bleeding_not_stopping"
+          ],
+          "level": "EMERGENCY"
+        }
+      ],
       "rationale": "Blood soaking through the dressing needs the surgical team today. On a blood thinner, bleeding that will not stop is an emergency.",
       "action": "Press firmly on the dressing for a full 10 minutes without lifting it to look, and keep the leg raised.",
-      "source": "MP", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "source": "MP",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
     {
-      "id": "K6", "applies_to": "tka", "level": "URGENT",
-      "triggers": ["foot_cold", "foot_pale_or_blue", "foot_numb", "cannot_move_foot"],
+      "id": "K6",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "URGENT",
+      "triggers": [
+        "foot_cold",
+        "foot_pale_or_blue",
+        "foot_numb",
+        "cannot_move_foot"
+      ],
       "rationale": "Changes in the colour, temperature or feeling of the foot can mean the blood supply or a nerve is affected.",
       "action": "Call the surgeon's on-call line now at 616-555-0199. Loosen anything tight around the leg while you call.",
-      "source": "MP", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "source": "MP",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
     {
-      "id": "K7", "applies_to": "tka", "level": "URGENT",
-      "triggers": ["fall", "cannot_bear_weight", "knee_deformity", "sudden_severe_knee_pain"],
+      "id": "K7",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "URGENT",
+      "triggers": [
+        "fall",
+        "cannot_bear_weight",
+        "knee_deformity",
+        "sudden_severe_knee_pain"
+      ],
       "rationale": "A fall, a sudden inability to put weight on the leg, or a knee that looks out of shape needs the surgeon to check the new joint today.",
       "action": "Stop walking on it and call the surgeon's on-call line now at 616-555-0199. If you cannot get up safely, call 911.",
-      "source": "DC,AAOS", "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+      "source": "DC,AAOS",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
     },
     {
-      "id": "K8", "applies_to": "tka", "level": "CONTACT_TEAM",
-      "triggers": ["pain_uncontrolled"],
+      "id": "K8",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "CONTACT_TEAM",
+      "triggers": [
+        "pain_uncontrolled"
+      ],
       "rationale": "Pain that your prescribed medicine is not controlling is worth a call so the plan can be adjusted.",
       "action": "Keep taking your medicines exactly as prescribed and do not double up. Write down when you took each dose so the team can see the pattern.",
-      "source": "MP", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "source": "MP",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
     {
-      "id": "K9", "applies_to": "tka", "level": "CONTACT_TEAM",
-      "triggers": ["constipation"],
+      "id": "K9",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "CONTACT_TEAM",
+      "triggers": [
+        "constipation"
+      ],
       "rationale": "Constipation is very common with oxycodone, and the team can adjust your bowel regimen.",
       "action": "Keep taking the docusate you were sent home with, drink plenty of water, and keep moving in short walks.",
-      "source": "AAOS", "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+      "source": "AAOS",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
     },
     {
-      "id": "K10", "applies_to": "tka", "level": "CONTACT_TEAM",
-      "triggers": ["vomiting", "cannot_keep_fluids_down"],
-      "modifiers": [{"if": "duration_gt_24h", "level": "URGENT"}],
+      "id": "K10",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "CONTACT_TEAM",
+      "triggers": [
+        "vomiting",
+        "cannot_keep_fluids_down"
+      ],
+      "modifiers": [
+        {
+          "if": "duration_gt_24h",
+          "level": "URGENT"
+        }
+      ],
       "rationale": "If you cannot keep fluids or medicines down - including your blood thinner - the team needs to know.",
       "action": "Sip small amounts of clear fluid often, and note which doses you have missed.",
-      "source": "AAOS", "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+      "source": "AAOS",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
     },
     {
-      "id": "K11", "applies_to": "tka", "level": "CONTACT_TEAM",
-      "triggers": ["missed_anticoagulant_dose"],
+      "id": "K11",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "CONTACT_TEAM",
+      "triggers": [
+        "missed_anticoagulant_dose"
+      ],
       "rationale": "Missing blood-thinner doses raises the risk of a clot in the weeks after joint surgery.",
       "action": "Do not take two doses to catch up. The team will tell you what to do next.",
-      "source": "DC", "source_url": null
+      "source": "DC",
+      "source_url": null
     },
     {
-      "id": "K12", "applies_to": "tka", "level": "CONTACT_TEAM",
-      "triggers": ["rash", "itching_widespread", "hives"],
-      "excludes": ["swelling_face_lips_tongue", "throat_tightness", "difficulty_breathing"],
+      "id": "K12",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "CONTACT_TEAM",
+      "triggers": [
+        "rash",
+        "itching_widespread",
+        "hives"
+      ],
+      "excludes": [
+        "swelling_face_lips_tongue",
+        "throat_tightness",
+        "difficulty_breathing"
+      ],
       "rationale": "A new rash can be a reaction to a medication. Without breathing trouble or facial swelling it is not an emergency, but the team should review your medicines.",
       "action": "Do not stop your blood thinner on your own. Take a photo of the rash and note when it started.",
-      "source": "MP", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "source": "MP",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
-
     {
-      "id": "M1", "applies_to": "tka", "level": "MONITOR",
-      "triggers": ["knee_swelling", "thigh_swelling", "shin_swelling", "leg_swelling_mild"],
-      "excludes": ["calf_pain", "calf_swelling", "calf_warmth", "calf_tenderness", "leg_swelling_one_sided"],
+      "id": "M1",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "MONITOR",
+      "triggers": [
+        "knee_swelling",
+        "thigh_swelling",
+        "shin_swelling",
+        "leg_swelling_mild"
+      ],
+      "excludes": [
+        "calf_pain",
+        "calf_swelling",
+        "calf_warmth",
+        "calf_tenderness",
+        "leg_swelling_one_sided"
+      ],
       "rationale": "Swelling of the knee, thigh and shin is expected for several weeks after a knee replacement, and it improves with ice and elevation.",
       "action": "Ice 20 minutes at a time, several times a day, and elevate the leg above heart level when you rest.",
-      "watch_for": ["the calf becomes painful, warm or tender", "the swelling suddenly gets much worse", "new chest pain or breathlessness"],
-      "source": "MP,NHS", "source_url": "https://www.nhs.uk/tests-and-treatments/knee-replacement/recovery/"
+      "watch_for": [
+        "the calf becomes painful, warm or tender",
+        "the swelling suddenly gets much worse",
+        "new chest pain or breathlessness"
+      ],
+      "source": "MP,NHS",
+      "source_url": "https://www.nhs.uk/tests-and-treatments/knee-replacement/recovery/"
     },
     {
-      "id": "M2", "applies_to": "tka", "level": "MONITOR",
-      "triggers": ["bruising"],
+      "id": "M2",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "MONITOR",
+      "triggers": [
+        "bruising"
+      ],
       "rationale": "Bruising around the knee and down the shin is normal after this surgery, especially on a blood thinner, and it fades over two to three weeks.",
       "action": "No treatment needed. Keep icing and elevating as you were told.",
-      "watch_for": ["the bruising spreads quickly or appears somewhere new", "new bleeding from anywhere", "the skin becomes tight, shiny and very painful"],
-      "source": "MP,NHS", "source_url": "https://www.nhs.uk/tests-and-treatments/knee-replacement/recovery/"
+      "watch_for": [
+        "the bruising spreads quickly or appears somewhere new",
+        "new bleeding from anywhere",
+        "the skin becomes tight, shiny and very painful"
+      ],
+      "source": "MP,NHS",
+      "source_url": "https://www.nhs.uk/tests-and-treatments/knee-replacement/recovery/"
     },
     {
-      "id": "M3", "applies_to": "tka", "level": "MONITOR",
-      "triggers": ["wound_redness_mild"],
-      "excludes": ["wound_redness_spreading", "wound_hot", "red_streaks", "fever"],
+      "id": "M3",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "MONITOR",
+      "triggers": [
+        "wound_redness_mild"
+      ],
+      "excludes": [
+        "wound_redness_spreading",
+        "wound_hot",
+        "red_streaks",
+        "fever"
+      ],
       "rationale": "Mild redness right at the edge of the incision is part of normal healing.",
       "action": "Leave the dressing alone and keep it dry.",
-      "watch_for": ["the redness spreads outward from the incision", "the incision feels hot", "your temperature reaches 101F"],
-      "source": "MP", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "watch_for": [
+        "the redness spreads outward from the incision",
+        "the incision feels hot",
+        "your temperature reaches 101F"
+      ],
+      "source": "MP",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
     {
-      "id": "M4", "applies_to": "tka", "level": "MONITOR",
-      "triggers": ["incision_itching", "incision_tightness", "numbness_near_scar"],
+      "id": "M4",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "MONITOR",
+      "triggers": [
+        "incision_itching",
+        "incision_tightness",
+        "numbness_near_scar"
+      ],
       "rationale": "Itching, tightness and patches of numbness around the scar are normal as the skin and the small nerves heal.",
       "action": "Try not to scratch it, and do not put creams on it while the dressing is still on.",
-      "watch_for": ["new drainage from the incision", "the wound edges start to open", "pain at the incision that keeps increasing"],
-      "source": "AAOS", "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+      "watch_for": [
+        "new drainage from the incision",
+        "the wound edges start to open",
+        "pain at the incision that keeps increasing"
+      ],
+      "source": "AAOS",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
     },
     {
-      "id": "M5", "applies_to": "tka", "level": "MONITOR",
-      "triggers": ["wound_drainage_clear_small"],
-      "excludes": ["wound_drainage_purulent", "wound_drainage_increasing"],
-      "modifiers": [{"if": "post_op_day_gt_3", "level": "CONTACT_TEAM"}],
+      "id": "M5",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "MONITOR",
+      "triggers": [
+        "wound_drainage_clear_small"
+      ],
+      "excludes": [
+        "wound_drainage_purulent",
+        "wound_drainage_increasing"
+      ],
+      "modifiers": [
+        {
+          "if": "post_op_day_gt_3",
+          "level": "CONTACT_TEAM"
+        }
+      ],
       "rationale": "A small amount of clear or pink drainage is expected in the first two to three days. Your discharge instructions say drainage that is still going after day 3 should be reported.",
       "action": "Leave the dressing in place and keep it dry.",
-      "watch_for": ["the drainage increases", "it turns yellow, green or cloudy", "it develops a bad smell"],
-      "source": "DC,MP", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "watch_for": [
+        "the drainage increases",
+        "it turns yellow, green or cloudy",
+        "it develops a bad smell"
+      ],
+      "source": "DC,MP",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
     {
-      "id": "M6", "applies_to": "tka", "level": "MONITOR",
-      "triggers": ["knee_warmth"],
-      "excludes": ["calf_warmth", "fever", "wound_redness_spreading"],
+      "id": "M6",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "MONITOR",
+      "triggers": [
+        "knee_warmth"
+      ],
+      "excludes": [
+        "calf_warmth",
+        "fever",
+        "wound_redness_spreading"
+      ],
       "rationale": "Warmth around the operated knee itself is a normal part of the healing inflammation and can last for weeks.",
       "action": "Ice the knee and keep it elevated when you rest.",
-      "watch_for": ["the warmth moves down into the calf", "you develop a fever", "redness spreads away from the incision"],
-      "source": "NHS", "source_url": "https://www.nhs.uk/tests-and-treatments/knee-replacement/recovery/"
+      "watch_for": [
+        "the warmth moves down into the calf",
+        "you develop a fever",
+        "redness spreads away from the incision"
+      ],
+      "source": "NHS",
+      "source_url": "https://www.nhs.uk/tests-and-treatments/knee-replacement/recovery/"
     },
     {
-      "id": "M7", "applies_to": "tka", "level": "MONITOR",
-      "triggers": ["stiffness", "clicking", "difficulty_bending"],
+      "id": "M7",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "MONITOR",
+      "triggers": [
+        "stiffness",
+        "clicking",
+        "difficulty_bending"
+      ],
       "rationale": "Stiffness and clicking are expected as the new joint settles, and they improve with your exercises and physical therapy.",
       "action": "Keep doing your home exercises three times a day and go to physical therapy as scheduled.",
-      "watch_for": ["the knee locks and will not move", "you suddenly cannot bear weight on it", "you fall"],
-      "source": "AAOS", "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+      "watch_for": [
+        "the knee locks and will not move",
+        "you suddenly cannot bear weight on it",
+        "you fall"
+      ],
+      "source": "AAOS",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
     },
     {
-      "id": "M8", "applies_to": "tka", "level": "MONITOR",
-      "triggers": ["low_grade_temp"],
-      "excludes": ["chills", "wound_drainage_purulent", "wound_redness_spreading"],
+      "id": "M8",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "MONITOR",
+      "triggers": [
+        "low_grade_temp"
+      ],
+      "excludes": [
+        "chills",
+        "wound_drainage_purulent",
+        "wound_redness_spreading"
+      ],
       "rationale": "A slightly raised temperature under 101F in the first days after surgery is common.",
       "action": "Keep checking your temperature every 4 hours and write the numbers down. Drink plenty of water.",
-      "watch_for": ["your temperature reaches 101F", "you get chills or shaking", "the wound changes in any way"],
-      "source": "MP", "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+      "watch_for": [
+        "your temperature reaches 101F",
+        "you get chills or shaking",
+        "the wound changes in any way"
+      ],
+      "source": "MP",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
     },
     {
-      "id": "M9", "applies_to": "tka", "level": "MONITOR",
-      "triggers": ["nausea_mild", "drowsiness"],
-      "excludes": ["vomiting", "cannot_keep_fluids_down", "sudden_confusion"],
+      "id": "M9",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "MONITOR",
+      "triggers": [
+        "nausea_mild",
+        "drowsiness"
+      ],
+      "excludes": [
+        "vomiting",
+        "cannot_keep_fluids_down",
+        "sudden_confusion"
+      ],
       "rationale": "Mild nausea or feeling sleepy is a common side effect of oxycodone.",
       "action": "Take the oxycodone with a little food, and only when you need it for severe pain.",
-      "watch_for": ["you start vomiting", "you cannot keep your medicines down", "you become confused or very hard to wake"],
-      "source": "AAOS", "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+      "watch_for": [
+        "you start vomiting",
+        "you cannot keep your medicines down",
+        "you become confused or very hard to wake"
+      ],
+      "source": "AAOS",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
     },
     {
-      "id": "M10", "applies_to": "tka", "level": "MONITOR",
-      "triggers": ["low_mood", "anxiety_about_recovery", "poor_sleep"],
-      "excludes": ["suicidal_thoughts", "self_harm_thoughts"],
+      "id": "M10",
+      "applies_to": "tka",
+      "phase": "post_op",
+      "level": "MONITOR",
+      "triggers": [
+        "low_mood",
+        "anxiety_about_recovery",
+        "poor_sleep"
+      ],
+      "excludes": [
+        "suicidal_thoughts",
+        "self_harm_thoughts"
+      ],
       "rationale": "Feeling low, anxious or sleeping badly is common in the first weeks after a big operation, and it usually lifts as you get moving again.",
       "action": "Be kind to yourself about the pace of this. One short walk in daylight, and telling Linda how you are actually doing, both help more than they sound like they would.",
-      "watch_for": ["your mood keeps dropping over a week or more", "you cannot manage everyday tasks", "any thoughts of harming yourself"],
-      "source": "NHS", "source_url": "https://www.nhs.uk/tests-and-treatments/knee-replacement/recovery/"
+      "watch_for": [
+        "your mood keeps dropping over a week or more",
+        "you cannot manage everyday tasks",
+        "any thoughts of harming yourself"
+      ],
+      "source": "NHS",
+      "source_url": "https://www.nhs.uk/tests-and-treatments/knee-replacement/recovery/"
+    },
+    {
+      "id": "P1",
+      "applies_to": "tka",
+      "phase": "pre_op",
+      "level": "URGENT",
+      "triggers": [
+        "fever",
+        "chills",
+        "sore_throat",
+        "cold_symptoms",
+        "cough",
+        "productive_cough"
+      ],
+      "rationale": "An infection in the days before joint replacement can mean the operation is postponed, because operating while your body is fighting an infection risks the new joint becoming infected.",
+      "action": "Call the surgical scheduler today at 616-555-0150. Do not wait until the morning of surgery to mention it.",
+      "source": "AAOS,MP",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+    },
+    {
+      "id": "P2",
+      "applies_to": "tka",
+      "phase": "pre_op",
+      "level": "URGENT",
+      "triggers": [
+        "skin_break_near_site",
+        "skin_infection",
+        "ingrown_nail",
+        "athletes_foot",
+        "rash"
+      ],
+      "excludes": [
+        "swelling_face_lips_tongue",
+        "throat_tightness",
+        "difficulty_breathing"
+      ],
+      "rationale": "A cut, sore, rash or skin infection on the leg being operated on can let bacteria into the new joint. Surgeons routinely postpone for this, and it is much better found now than on the day.",
+      "action": "Call the scheduler today at 616-555-0150. Do not shave the leg, and send a photo if they ask for one.",
+      "source": "AAOS",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+    },
+    {
+      "id": "P3",
+      "applies_to": "tka",
+      "phase": "pre_op",
+      "level": "CONTACT_TEAM",
+      "triggers": [
+        "toothache",
+        "dental_abscess"
+      ],
+      "rationale": "Bacteria from a dental infection can travel to a new joint, so dental problems are dealt with before joint replacement rather than after it.",
+      "action": "Tell the scheduler, and see your dentist before the operation.",
+      "source": "AAOS",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+    },
+    {
+      "id": "P4",
+      "applies_to": "tka",
+      "phase": "pre_op",
+      "level": "CONTACT_TEAM",
+      "triggers": [
+        "urinary_burning",
+        "urinary_frequency"
+      ],
+      "rationale": "A urine infection is treated before joint replacement, because it is another source of bacteria that could reach the new joint.",
+      "action": "Call your GP for a urine test, and tell the surgical team what you are being treated with.",
+      "source": "AAOS",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+    },
+    {
+      "id": "P5",
+      "applies_to": "tka",
+      "phase": "pre_op",
+      "level": "URGENT",
+      "triggers": [
+        "ate_after_cutoff"
+      ],
+      "rationale": "Eating or drinking after the fasting cutoff can make the anaesthetic unsafe. The team can only work around it if they know before you come in.",
+      "action": "Call the scheduler now at 616-555-0150 and tell them exactly what you had and when. Do not turn up and hope it will be fine.",
+      "source": "MP",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+    },
+    {
+      "id": "P6",
+      "applies_to": "tka",
+      "phase": "pre_op",
+      "level": "URGENT",
+      "triggers": [
+        "medication_not_stopped"
+      ],
+      "rationale": "Some medicines have to be stopped before surgery and others have to be continued. Getting it wrong can mean bleeding problems or a cancelled operation.",
+      "action": "Call the scheduler today at 616-555-0150 with the name of the medicine and when you last took it. Do not stop anything else on your own.",
+      "source": "MP",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+    },
+    {
+      "id": "P7",
+      "applies_to": "tka",
+      "phase": "pre_op",
+      "level": "CONTACT_TEAM",
+      "triggers": [
+        "fall",
+        "new_injury"
+      ],
+      "rationale": "A new injury before surgery can change the plan, and the team would much rather know now than on the day.",
+      "action": "Call the scheduler at 616-555-0150 and describe what happened.",
+      "source": "AAOS",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+    },
+    {
+      "id": "P8",
+      "applies_to": "tka",
+      "phase": "pre_op",
+      "level": "CONTACT_TEAM",
+      "triggers": [
+        "high_blood_sugar"
+      ],
+      "rationale": "Blood sugar running high before joint replacement raises the risk of a wound infection, and the team may want it better controlled before they operate.",
+      "action": "Call your GP and the surgical team with your recent readings.",
+      "source": "MP",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+    },
+    {
+      "id": "P9",
+      "applies_to": "tka",
+      "phase": "pre_op",
+      "level": "MONITOR",
+      "triggers": [
+        "pre_op_anxiety",
+        "anxiety_about_recovery",
+        "poor_sleep"
+      ],
+      "excludes": [
+        "suicidal_thoughts",
+        "self_harm_thoughts"
+      ],
+      "rationale": "Feeling anxious and sleeping badly in the run-up to a big operation is very common, and it does not mean anything is wrong.",
+      "action": "Write down the questions you want to ask on the day - people sleep better once the list is out of their head. Tell the team at your pre-op appointment; they hear this every week.",
+      "watch_for": [
+        "you are thinking about cancelling because of the worry",
+        "you cannot manage everyday tasks",
+        "any thoughts of harming yourself"
+      ],
+      "source": "NHS",
+      "source_url": "https://www.nhs.uk/tests-and-treatments/knee-replacement/recovery/"
+    },
+    {
+      "id": "P10",
+      "applies_to": "tka",
+      "phase": "pre_op",
+      "level": "MONITOR",
+      "triggers": [
+        "knee_pain",
+        "stiffness",
+        "difficulty_bending"
+      ],
+      "excludes": [
+        "knee_locking",
+        "cannot_bear_weight",
+        "knee_deformity",
+        "fever",
+        "knee_warmth"
+      ],
+      "rationale": "The knee often feels worse in the weeks before surgery. That is the arthritis you are having treated, not a new problem.",
+      "action": "Keep taking your usual pain relief as prescribed, and keep moving gently - arriving stronger makes the recovery easier.",
+      "watch_for": [
+        "the knee locks or gives way completely",
+        "it becomes hot, red and swollen",
+        "you fall, or you cannot put weight on it"
+      ],
+      "source": "AAOS",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+    },
+    {
+      "id": "N1",
+      "applies_to": "general",
+      "phase": "no_procedure",
+      "level": "CONTACT_TEAM",
+      "triggers": [
+        "knee_warmth",
+        "knee_swelling"
+      ],
+      "modifiers": [
+        {
+          "if": [
+            "has_symptom:fever"
+          ],
+          "level": "URGENT"
+        },
+        {
+          "if": [
+            "has_symptom:chills"
+          ],
+          "level": "URGENT"
+        }
+      ],
+      "rationale": "A knee that is hot and swollen needs to be looked at, and with a fever it needs to be looked at the same day - an infection inside a joint is treated urgently.",
+      "action": "If you have a fever with this, go to urgent care today. Otherwise book a GP appointment this week and do not push through it.",
+      "source": "MP",
+      "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"
+    },
+    {
+      "id": "N2",
+      "applies_to": "general",
+      "phase": "no_procedure",
+      "level": "URGENT",
+      "triggers": [
+        "cannot_bear_weight",
+        "knee_deformity",
+        "knee_locking",
+        "fall",
+        "new_injury",
+        "sudden_severe_knee_pain"
+      ],
+      "rationale": "A knee that will not take your weight, that is locked, or that changed shape after an injury needs to be examined today.",
+      "action": "Go to urgent care or an emergency department today. Do not drive yourself if you cannot control the leg.",
+      "source": "AAOS",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
+    },
+    {
+      "id": "N3",
+      "applies_to": "general",
+      "phase": "no_procedure",
+      "level": "CONTACT_TEAM",
+      "triggers": [
+        "knee_pain",
+        "knee_giving_way",
+        "knee_instability",
+        "pain_on_stairs",
+        "stiffness",
+        "clicking",
+        "difficulty_bending"
+      ],
+      "rationale": "Knee pain that has been going on, or a knee that gives way, is worth a proper assessment - the cause changes the treatment completely, and there is no way to tell which it is from a description alone.",
+      "action": "Book a GP appointment. Before you go, note how long it has been going on, what makes it worse, whether it swells, and whether it ever locks or gives way.",
+      "source": "AAOS",
+      "source_url": "https://orthoinfo.aaos.org/en/treatment/total-knee-replacement"
     }
-  ]
+  ],
+  "phases": {
+    "no_procedure": "No procedure planned - the patient is asking what something might be.",
+    "pre_op": "A procedure is booked and has not happened yet.",
+    "post_op": "The patient has been discharged after the procedure."
+  }
 }

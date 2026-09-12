@@ -1,0 +1,149 @@
+{
+  "version": "1.0",
+  "note": "Possibilities to raise with a clinician, for a patient with a knee complaint and no procedure. These are NOT a diagnosis and carry no probability. The engine matches on symptoms only; the more_likely_if and less_likely_if lines are shown to the patient as things a clinician can tell apart, and are never evaluated by the software.",
+  "disclaimer": "This is a list of things worth asking about. It is not a diagnosis, and it is not ordered by how likely anything is.",
+  "sources": {
+    "AAOS": {"name": "AAOS OrthoInfo", "url": "https://orthoinfo.aaos.org/en/diseases--conditions/"},
+    "MP": {"name": "MedlinePlus (NIH/NLM)", "url": "https://medlineplus.gov/kneeinjuriesanddisorders.html"},
+    "NHS": {"name": "NHS - Knee pain", "url": "https://www.nhs.uk/conditions/knee-pain/"}
+  },
+  "conditions": [
+    {
+      "id": "C1",
+      "name": "Osteoarthritis of the knee",
+      "plain": "Wear of the cartilage that cushions the joint.",
+      "triggers": ["knee_pain", "stiffness", "difficulty_bending", "clicking", "knee_swelling", "pain_on_stairs"],
+      "more_likely_if": [
+        "it came on gradually over months or years rather than suddenly",
+        "it is stiff for less than half an hour when you wake up",
+        "it is worse after activity and at the end of the day",
+        "you are over 50, or there is arthritis in the family"
+      ],
+      "less_likely_if": [
+        "it started suddenly after a twist or an injury",
+        "the knee locks completely and will not straighten"
+      ],
+      "next_step": "A GP assessment, usually with a weight-bearing X-ray. Most people start with exercise, weight management and pain relief.",
+      "source": "AAOS", "source_url": "https://orthoinfo.aaos.org/en/diseases--conditions/arthritis-of-the-knee/"
+    },
+    {
+      "id": "C2",
+      "name": "Meniscus (cartilage) tear",
+      "plain": "A tear in one of the two rubbery pads that sit between the bones.",
+      "triggers": ["knee_pain", "knee_locking", "knee_catching", "knee_swelling", "knee_giving_way", "clicking"],
+      "more_likely_if": [
+        "it started with a twist, a squat or a pivot",
+        "the knee catches, clicks or locks on you",
+        "swelling came on over a day rather than within minutes",
+        "the pain is along the line of the joint, at the side"
+      ],
+      "less_likely_if": [
+        "there was no injury and the ache has been there for years"
+      ],
+      "next_step": "A GP or physiotherapy assessment. An MRI only if it does not settle, because many tears are managed without surgery.",
+      "source": "AAOS", "source_url": "https://orthoinfo.aaos.org/en/diseases--conditions/meniscus-tears/"
+    },
+    {
+      "id": "C3",
+      "name": "Patellofemoral pain (pain around the kneecap)",
+      "plain": "Irritation where the kneecap runs against the thigh bone.",
+      "triggers": ["knee_pain", "pain_on_stairs", "difficulty_bending", "clicking"],
+      "more_likely_if": [
+        "the pain is at the front, around or behind the kneecap",
+        "it is worse on stairs and hills, or after sitting a long time",
+        "there is no real swelling",
+        "it started after a change in how much you were walking or training"
+      ],
+      "less_likely_if": [
+        "the knee locks or gives way",
+        "the knee is hot and visibly swollen"
+      ],
+      "next_step": "Physiotherapy is usually the first and often the only treatment needed.",
+      "source": "AAOS", "source_url": "https://orthoinfo.aaos.org/en/diseases--conditions/patellofemoral-pain-syndrome/"
+    },
+    {
+      "id": "C4",
+      "name": "Ligament sprain or tear",
+      "plain": "A stretch or tear of one of the bands that hold the knee steady.",
+      "triggers": ["knee_giving_way", "knee_instability", "knee_pain", "knee_swelling", "new_injury"],
+      "more_likely_if": [
+        "you heard or felt a pop at the time",
+        "it swelled within a few hours of the injury",
+        "the knee feels like it will buckle under you",
+        "it happened in sport, or in a fall"
+      ],
+      "less_likely_if": [
+        "there was no injury at all"
+      ],
+      "next_step": "Assessment the same week by a GP or a sports clinic. Some of these need surgery and some do not.",
+      "source": "AAOS", "source_url": "https://orthoinfo.aaos.org/en/diseases--conditions/anterior-cruciate-ligament-acl-injuries/"
+    },
+    {
+      "id": "C5",
+      "name": "Bursitis in front of the kneecap",
+      "plain": "Swelling of the small fluid sac that sits over the kneecap.",
+      "triggers": ["knee_swelling", "knee_pain", "knee_warmth"],
+      "more_likely_if": [
+        "there is a soft, squashy swelling right over the kneecap",
+        "you kneel a lot for work or at home",
+        "the joint itself still bends more or less normally"
+      ],
+      "less_likely_if": [
+        "the whole joint is swollen and you cannot bend it"
+      ],
+      "next_step": "A GP visit - and the same day if it is hot, red, or you have a fever, because an infected bursa is treated quickly.",
+      "source": "MP", "source_url": "https://medlineplus.gov/ency/article/000019.htm"
+    },
+    {
+      "id": "C6",
+      "name": "Gout or another inflammatory arthritis",
+      "plain": "Inflammation driven by crystals or by the immune system rather than by wear.",
+      "triggers": ["knee_pain", "knee_swelling", "knee_warmth", "stiffness"],
+      "more_likely_if": [
+        "it came on over hours and is very painful even to touch",
+        "the skin over it is red and hot",
+        "you have had gout before, or in another joint like the big toe",
+        "you are stiff for more than an hour in the mornings"
+      ],
+      "less_likely_if": [
+        "it built up slowly over years with no flares"
+      ],
+      "next_step": "A GP appointment. A blood test, and sometimes drawing a little fluid from the joint, tells these apart.",
+      "source": "MP", "source_url": "https://medlineplus.gov/gout.html"
+    },
+    {
+      "id": "C7",
+      "name": "Baker's cyst",
+      "plain": "A pocket of joint fluid that bulges out at the back of the knee.",
+      "triggers": ["knee_swelling", "stiffness", "difficulty_bending"],
+      "more_likely_if": [
+        "there is a bulge behind the knee",
+        "it feels tight at the back when you bend it",
+        "you already have arthritis or a cartilage problem in that knee"
+      ],
+      "less_likely_if": [
+        "the swelling is at the front of the knee"
+      ],
+      "next_step": "A GP assessment. Worth knowing: a cyst that bursts can look exactly like a clot in the calf, which is why calf swelling always gets checked properly.",
+      "source": "NHS", "source_url": "https://www.nhs.uk/conditions/bakers-cyst/"
+    },
+    {
+      "id": "C8",
+      "name": "Patellar tendinopathy",
+      "plain": "Irritation of the tendon just below the kneecap.",
+      "triggers": ["knee_pain", "pain_on_stairs"],
+      "more_likely_if": [
+        "the pain is in one spot just below the kneecap",
+        "it is worse with jumping, running or stairs",
+        "it is tender when you press that exact spot",
+        "it started after you increased your training"
+      ],
+      "less_likely_if": [
+        "the knee is swollen and hot",
+        "the pain is deep inside the joint rather than on the front"
+      ],
+      "next_step": "Physiotherapy, and easing the load for a while rather than stopping completely.",
+      "source": "AAOS", "source_url": "https://orthoinfo.aaos.org/en/diseases--conditions/patellar-tendon-tear/"
+    }
+  ]
+}

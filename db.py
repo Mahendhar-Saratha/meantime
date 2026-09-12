@@ -27,6 +27,9 @@ CREATE TABLE IF NOT EXISTS patients (
 CREATE TABLE IF NOT EXISTS discharge_records (
     encounter_id TEXT PRIMARY KEY, patient_id TEXT, procedure_code TEXT,
     surgery_date TEXT, json_discharge TEXT);
+CREATE TABLE IF NOT EXISTS scheduled_procedures (
+    booking_id TEXT PRIMARY KEY, patient_id TEXT, procedure_code TEXT,
+    surgery_date TEXT, json_booking TEXT);
 CREATE TABLE IF NOT EXISTS conversations (
     conv_id TEXT PRIMARY KEY, patient_id TEXT, started_at TEXT);
 CREATE TABLE IF NOT EXISTS symptom_reports (
@@ -87,6 +90,8 @@ def seed() -> None:
         baseline = json.load(fh)
     with open(os.path.join(DATA_DIR, "discharge_summary.json"), encoding="utf-8") as fh:
         discharge = json.load(fh)
+    with open(os.path.join(DATA_DIR, "scheduled_procedure.json"), encoding="utf-8") as fh:
+        booking = json.load(fh)
 
     with connect() as conn:
         conn.execute(
@@ -103,6 +108,16 @@ def seed() -> None:
                 json.dumps(discharge),
             ),
         )
+        conn.execute(
+            "INSERT OR REPLACE INTO scheduled_procedures VALUES (?,?,?,?,?)",
+            (
+                booking["booking_id"],
+                booking["patient_id"],
+                booking["procedure_code"],
+                booking["surgery_date"],
+                json.dumps(booking),
+            ),
+        )
 
 
 def load_rules() -> list[dict]:
@@ -115,6 +130,17 @@ def load_rules_file() -> dict:
         return json.load(fh)
 
 
+def load_conditions() -> list[dict]:
+    """The curated possibilities list used before any procedure."""
+    with open(os.path.join(DATA_DIR, "conditions.json"), encoding="utf-8") as fh:
+        return json.load(fh)["conditions"]
+
+
+def load_conditions_file() -> dict:
+    with open(os.path.join(DATA_DIR, "conditions.json"), encoding="utf-8") as fh:
+        return json.load(fh)
+
+
 # --- the merged context ---------------------------------------------------
 
 def _years_since(iso_date: str, today: date) -> int:
@@ -122,21 +148,107 @@ def _years_since(iso_date: str, today: date) -> int:
     return today.year - d.year - ((today.month, today.day) < (d.month, d.day))
 
 
-def get_patient_context(patient_id: str = PATIENT_ID) -> dict:
-    """Baseline + discharge merged into the one record the agent reasons over."""
+def _load_records(patient_id: str) -> tuple[dict, dict, dict]:
     with connect() as conn:
         prow = conn.execute("SELECT json_baseline FROM patients WHERE patient_id=?", (patient_id,)).fetchone()
         drow = conn.execute(
             "SELECT json_discharge FROM discharge_records WHERE patient_id=? ORDER BY surgery_date DESC LIMIT 1",
             (patient_id,),
         ).fetchone()
-    if not prow or not drow:
+        brow = conn.execute(
+            "SELECT json_booking FROM scheduled_procedures WHERE patient_id=? ORDER BY surgery_date DESC LIMIT 1",
+            (patient_id,),
+        ).fetchone()
+    if not prow or not drow or not brow:
         raise RuntimeError("Database not seeded. Run db.seed() first.")
+    return json.loads(prow["json_baseline"]), json.loads(drow["json_discharge"]), json.loads(brow["json_booking"])
 
-    baseline = json.loads(prow["json_baseline"])
-    discharge = json.loads(drow["json_discharge"])
+
+def _base_context(baseline: dict, today: date, phase: str) -> dict:
+    """The parts of the record that are true in every phase."""
+    return {
+        "patient_id": baseline["patient_id"],
+        "phase": phase,
+        "name": baseline["name"],
+        "age": _years_since(baseline["dob"], today),
+        "sex": baseline["sex"],
+        "phone": baseline["phone"],
+        "emergency_contact": baseline["emergency_contact"],
+        "primary_care": baseline["primary_care"],
+        "conditions": baseline["conditions"],
+        "home_medications": baseline["home_medications"],
+        "allergies": baseline["allergies"],
+        "today": today.isoformat(),
+        "helpline": baseline["nurse_helpline"],
+        # defaults the phase blocks below override where they apply
+        "procedure_code": None,
+        "on_anticoagulant": False,
+        "on_opioid": False,
+        "anticoagulant_name": None,
+        "on_call": None,
+        "scheduler_phone": None,
+    }
+
+
+def get_patient_context(patient_id: str = PATIENT_ID, phase: str = "post_op") -> dict:
+    """The record the agent reasons over, for one of the three phases of care.
+
+    `no_procedure` is the baseline alone - nothing has been booked. `pre_op`
+    adds the booking and its preparation instructions. `post_op` adds the
+    discharge summary. Same patient, three points on the same timeline.
+    """
+    baseline, discharge, booking = _load_records(patient_id)
+
+    if phase == "no_procedure":
+        today = demo_today()
+        ctx = _base_context(baseline, today, phase)
+        ctx.update(
+            {
+                "procedure": None,
+                "situation": "No procedure planned or booked. This is the record as it stands before any treatment.",
+            }
+        )
+        return ctx
+
+    if phase == "pre_op":
+        surgery_date = date.fromisoformat(booking["surgery_date"])
+        # Pinned: stand this many days before the operation, so the countdown
+        # is identical every time the demo is run.
+        today = surgery_date - timedelta(days=booking["demo_days_until_surgery"])
+        ctx = _base_context(baseline, today, phase)
+
+        upcoming = sorted(
+            (a for a in booking["pre_op_appointments"] if date.fromisoformat(a["date"]) >= today),
+            key=lambda a: a["date"],
+        )
+        ctx.update(
+            {
+                "booking_id": booking["booking_id"],
+                "procedure": booking["procedure"],
+                "procedure_code": booking["procedure_code"],
+                "laterality": booking["laterality"],
+                "surgery_date": booking["surgery_date"],
+                "arrival_time": booking["arrival_time"],
+                "hospital": booking["hospital"],
+                "surgeon": booking["surgeon"],
+                "scheduler_phone": booking["scheduler"]["phone"],
+                "preparation": booking["preparation"],
+                "warning_list": booking["warning_list"],
+                "pre_op_appointments": booking["pre_op_appointments"],
+                "days_until_surgery": (surgery_date - today).days,
+                "next_followup": (
+                    dict(upcoming[0], days_away=(date.fromisoformat(upcoming[0]["date"]) - today).days)
+                    if upcoming
+                    else None
+                ),
+                "on_call": booking["surgeon"]["on_call_phone"],
+            }
+        )
+        return ctx
+
+    # post_op
     today = demo_today()
-
+    ctx = _base_context(baseline, today, phase)
     meds = discharge["discharge_medications"]
     surgery_date = date.fromisoformat(discharge["surgery_date"])
 
@@ -155,41 +267,32 @@ def get_patient_context(patient_id: str = PATIENT_ID) -> dict:
     clinical = [f for f in upcoming if "therapy" not in f["type"].lower()]
     next_clinical = _with_days(clinical[0]) if clinical else None
 
-    return {
-        "patient_id": patient_id,
-        "name": baseline["name"],
-        "age": _years_since(baseline["dob"], today),
-        "sex": baseline["sex"],
-        "phone": baseline["phone"],
-        "emergency_contact": baseline["emergency_contact"],
-        "primary_care": baseline["primary_care"],
-        "conditions": baseline["conditions"],
-        "home_medications": baseline["home_medications"],
-        "allergies": baseline["allergies"],
-        "encounter_id": discharge["encounter_id"],
-        "procedure": discharge["procedure"],
-        "procedure_code": discharge["procedure_code"],
-        "laterality": discharge["laterality"],
-        "surgery_date": discharge["surgery_date"],
-        "discharge_date": discharge["discharge_date"],
-        "surgeon": discharge["surgeon"],
-        "discharge_diagnosis": discharge["discharge_diagnosis"],
-        "discharge_medications": meds,
-        "instructions": discharge["instructions"],
-        "warning_list": discharge["warning_list"],
-        "follow_up": discharge["follow_up"],
-        # computed
-        "today": today.isoformat(),
-        "post_op_day": (today - surgery_date).days,
-        "on_anticoagulant": any(m.get("class") == "anticoagulant" for m in meds),
-        "on_opioid": any(m.get("class") == "opioid" for m in meds),
-        "anticoagulant_name": next((m["name"] for m in meds if m.get("class") == "anticoagulant"), None),
-        "next_followup": next_followup,
-        "next_clinical_followup": next_clinical,
-        "days_to_next_appointment": (next_clinical or next_followup or {}).get("days_away"),
-        "helpline": baseline["nurse_helpline"],
-        "on_call": discharge["surgeon"]["on_call_phone"],
-    }
+    ctx.update(
+        {
+            "encounter_id": discharge["encounter_id"],
+            "procedure": discharge["procedure"],
+            "procedure_code": discharge["procedure_code"],
+            "laterality": discharge["laterality"],
+            "surgery_date": discharge["surgery_date"],
+            "discharge_date": discharge["discharge_date"],
+            "surgeon": discharge["surgeon"],
+            "discharge_diagnosis": discharge["discharge_diagnosis"],
+            "discharge_medications": meds,
+            "instructions": discharge["instructions"],
+            "warning_list": discharge["warning_list"],
+            "follow_up": discharge["follow_up"],
+            "post_op_day": (today - surgery_date).days,
+            "on_anticoagulant": any(m.get("class") == "anticoagulant" for m in meds),
+            "on_opioid": any(m.get("class") == "opioid" for m in meds),
+            "anticoagulant_name": next((m["name"] for m in meds if m.get("class") == "anticoagulant"), None),
+            "next_followup": next_followup,
+            "next_clinical_followup": next_clinical,
+            "days_to_next_appointment": (next_clinical or next_followup or {}).get("days_away"),
+            "on_call": discharge["surgeon"]["on_call_phone"],
+            "scheduler_phone": discharge["surgeon"]["office_phone"],
+        }
+    )
+    return ctx
 
 
 # --- writes ---------------------------------------------------------------
@@ -291,6 +394,15 @@ def reset_demo() -> None:
 
 if __name__ == "__main__":
     seed()
+    for ph in ("no_procedure", "pre_op", "post_op"):
+        c = get_patient_context(phase=ph)
+        line = f"{ph:<14} today {c['today']}  {c.get('procedure') or 'no procedure planned'}"
+        if ph == "pre_op":
+            line += f"  -> surgery in {c['days_until_surgery']} days"
+        if ph == "post_op":
+            line += f"  -> post-op day {c['post_op_day']}"
+        print(line)
+    print()
     ctx = get_patient_context()
     print(f"{ctx['name']}, {ctx['age']}  |  {ctx['procedure']}  |  today {ctx['today']}")
     print(f"post_op_day: {ctx['post_op_day']}")

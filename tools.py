@@ -12,6 +12,8 @@ import db
 import engine
 
 _RULES: list[dict] | None = None
+_CONDITIONS: list[dict] | None = None
+DEFAULT_PHASE = "post_op"
 
 
 def _rules() -> list[dict]:
@@ -21,15 +23,31 @@ def _rules() -> list[dict]:
     return _RULES
 
 
+def _conditions() -> list[dict]:
+    global _CONDITIONS
+    if _CONDITIONS is None:
+        _CONDITIONS = db.load_conditions()
+    return _CONDITIONS
+
+
+def _describe_patient(ctx: dict) -> str:
+    who = f"{ctx['name']} ({ctx['patient_id']})"
+    if ctx["phase"] == "post_op":
+        return f"{who}, post-op day {ctx['post_op_day']}, {ctx['procedure']}"
+    if ctx["phase"] == "pre_op":
+        return f"{who}, {ctx['days_until_surgery']} days before {ctx['procedure']} on {ctx['surgery_date']}"
+    return f"{who}, age {ctx['age']}, no procedure planned"
+
+
 # --- the tools ------------------------------------------------------------
 
-def get_patient_context(conv_id: str | None = None) -> dict:
-    return db.get_patient_context()
+def get_patient_context(conv_id: str | None = None, phase: str = DEFAULT_PHASE) -> dict:
+    return db.get_patient_context(phase=phase)
 
 
-def assess_urgency(symptom_report: dict, conv_id: str | None = None) -> dict:
+def assess_urgency(symptom_report: dict, conv_id: str | None = None, phase: str = DEFAULT_PHASE) -> dict:
     """The only place urgency is decided. Persists both the report and the result."""
-    ctx = db.get_patient_context()
+    ctx = db.get_patient_context(phase=phase)
     assessment = engine.assess(symptom_report, ctx, _rules())
     if conv_id:
         db.insert_symptom_report(conv_id, symptom_report)
@@ -37,14 +55,47 @@ def assess_urgency(symptom_report: dict, conv_id: str | None = None) -> dict:
     return assessment
 
 
-def message_care_team(level: str, summary: str, symptoms: list | None = None, conv_id: str | None = None) -> dict:
-    ctx = db.get_patient_context()
-    surgeon = ctx["surgeon"]
-    if engine.rank(level) >= 3:  # URGENT or EMERGENCY
-        sent_to = f"{surgeon['name']} on-call, {surgeon['practice']} ({surgeon['on_call_phone']})"
-        eta_hours = 0
-    else:
-        sent_to = f"Ortho clinic nurse, {surgeon['practice']} ({surgeon['office_phone']})"
+def explore_possibilities(symptom_report: dict, conv_id: str | None = None, phase: str = DEFAULT_PHASE) -> dict:
+    """Curated things the complaint could be. Not a diagnosis, and not ranked by
+    likelihood - only by how much of what the patient described each involves."""
+    conditions_file = db.load_conditions_file()
+    found = engine.possibilities(symptom_report, _conditions())
+    return {
+        "possibilities": found,
+        "count": len(found),
+        "disclaimer": conditions_file["disclaimer"],
+        "ordering": "By how many of the things you described each one involves. This is not a ranking by likelihood.",
+        "if_empty": (
+            "Nothing in the curated list matches what was described. Say so plainly and point them at a clinician; "
+            "do not fill the gap with possibilities of your own."
+        ),
+    }
+
+
+def message_care_team(
+    level: str,
+    summary: str,
+    symptoms: list | None = None,
+    conv_id: str | None = None,
+    phase: str = DEFAULT_PHASE,
+) -> dict:
+    ctx = db.get_patient_context(phase=phase)
+    urgent = engine.rank(level) >= 3  # URGENT or EMERGENCY
+
+    if phase == "post_op":
+        surgeon = ctx["surgeon"]
+        sent_to = (
+            f"{surgeon['name']} on-call, {surgeon['practice']} ({surgeon['on_call_phone']})"
+            if urgent
+            else f"Ortho clinic nurse, {surgeon['practice']} ({surgeon['office_phone']})"
+        )
+        eta_hours = 0 if urgent else 24
+    elif phase == "pre_op":
+        sent_to = f"Surgical scheduling, {ctx['hospital']} ({ctx['scheduler_phone']})"
+        eta_hours = 0 if urgent else 24
+    else:  # no_procedure - there is no care team, so this reaches primary care
+        gp = ctx["primary_care"]
+        sent_to = f"{gp['clinician']}, {gp['practice']} ({gp['phone']})"
         eta_hours = 24
 
     body = summary
@@ -57,18 +108,20 @@ def message_care_team(level: str, summary: str, symptoms: list | None = None, co
         "sent_to": sent_to,
         "eta_hours": eta_hours,
         "status": "sent",
-        "patient": f"{ctx['name']} ({ctx['patient_id']}), post-op day {ctx['post_op_day']}, {ctx['procedure']}",
+        "patient": _describe_patient(ctx),
     }
 
 
-def schedule_checkin(hours_from_now: float, question: str, conv_id: str | None = None) -> dict:
+def schedule_checkin(
+    hours_from_now: float, question: str, conv_id: str | None = None, phase: str = DEFAULT_PHASE
+) -> dict:
     if not conv_id:
         return {"checkin_id": 0, "due_at": None, "status": "not_persisted"}
     checkin_id, due_at = db.insert_checkin(conv_id, hours_from_now, question)
     return {"checkin_id": checkin_id, "due_at": due_at, "question": question, "status": "scheduled"}
 
 
-def log_symptom(entry: str, level: str, conv_id: str | None = None) -> dict:
+def log_symptom(entry: str, level: str, conv_id: str | None = None, phase: str = DEFAULT_PHASE) -> dict:
     diary_id = db.insert_diary(conv_id, entry, level) if conv_id else 0
     return {"diary_id": diary_id, "entry": entry, "level": level, "status": "logged"}
 
@@ -76,18 +129,19 @@ def log_symptom(entry: str, level: str, conv_id: str | None = None) -> dict:
 IMPLEMENTATIONS = {
     "get_patient_context": get_patient_context,
     "assess_urgency": assess_urgency,
+    "explore_possibilities": explore_possibilities,
     "message_care_team": message_care_team,
     "schedule_checkin": schedule_checkin,
     "log_symptom": log_symptom,
 }
 
 
-def dispatch(name: str, arguments: dict, conv_id: str | None = None) -> dict:
+def dispatch(name: str, arguments: dict, conv_id: str | None = None, phase: str = DEFAULT_PHASE) -> dict:
     fn = IMPLEMENTATIONS.get(name)
     if fn is None:
         return {"error": f"unknown tool {name}"}
     try:
-        return fn(conv_id=conv_id, **(arguments or {}))
+        return fn(conv_id=conv_id, phase=phase, **(arguments or {}))
     except Exception as exc:  # a tool must never take the conversation down
         return {"error": f"{type(exc).__name__}: {exc}"}
 
@@ -143,6 +197,31 @@ TOOL_SCHEMAS = [
                         "patient_words": {"type": "string", "description": "what the patient actually said"},
                     },
                     "required": ["symptoms", "qualifiers", "patient_words"],
+                }
+            },
+            "required": ["symptom_report"],
+        },
+    },
+    {
+        "name": "explore_possibilities",
+        "description": (
+            "For a patient with NO procedure booked or completed: look up the curated list of things "
+            "their complaint could be, with what makes each more or less likely and what the usual next "
+            "step is. Call this AFTER assess_urgency, never instead of it. The list is data, not a "
+            "diagnosis: present it as things to raise with a clinician, and never say which one it is. "
+            "If it returns nothing, say so - do not supply possibilities of your own."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "symptom_report": {
+                    "type": "object",
+                    "properties": {
+                        "symptoms": {"type": "array", "items": SYMPTOM_ITEM},
+                        "qualifiers": {"type": "array", "items": {"type": "string"}},
+                        "patient_words": {"type": "string"},
+                    },
+                    "required": ["symptoms"],
                 }
             },
             "required": ["symptom_report"],
