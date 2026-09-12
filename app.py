@@ -478,6 +478,26 @@ if view == "Dashboard":
 # --- conversation ---------------------------------------------------------
 
 else:
+    strip, jump = st.columns([4.3, 1.45])
+    with strip:
+        # Before a verdict, show the whole evidence base. After one, show only
+        # the sources behind the rule that actually answered.
+        if assessment and assessment["matched"]:
+            codes = list(
+                dict.fromkeys(c for m in assessment["matched"] for c in m["source"].split(","))
+            )
+        else:
+            codes = list(ui.SOURCE_BADGE)
+        st.markdown(
+            ui.proof_strip(assessment, len(active_rules), codes, "evidence live from NIH · FDA · NLM"),
+            unsafe_allow_html=True,
+        )
+    with jump:
+        if st.button("See the evidence →", use_container_width=True, help="Open the dashboard"):
+            st.session_state.view_sel = "Dashboard"
+            st.session_state.view = "Dashboard"
+            st.rerun()
+
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])

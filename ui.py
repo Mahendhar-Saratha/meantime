@@ -511,3 +511,36 @@ def split_note() -> str:
   </div>
 </div>
 """
+
+
+def proof_strip(assessment: dict | None, rule_count: int, source_codes: list[str], live: str = "") -> str:
+    """A thin line under the masthead on the chat view.
+
+    The dashboard is the proof, but a judge should not have to go looking for it
+    to know this is more than a model in a text box. Before any verdict this
+    says what is standing behind the conversation; after one it says which rule
+    answered and where it came from.
+    """
+    chips = "".join(source_chip(c) for c in source_codes)
+    if assessment:
+        rule = assessment.get("top_rule")
+        left = (
+            f'{level_pill(assessment["level"])}'
+            f'<span style="font-size:.76rem;color:var(--ink-2);margin-left:.45rem">'
+            f'{"decided by rule <b>" + esc(rule) + "</b>" if rule else "no rule matched"}</span>'
+            f'<span style="margin-left:.5rem">{chips}</span>'
+        )
+    else:
+        left = (
+            f'<span style="font-size:.76rem;color:var(--ink-2)"><b>{rule_count}</b> rules in force</span>'
+            f'<span style="margin-left:.55rem">{chips}</span>'
+        )
+    right = (
+        f'<span style="font-size:.72rem;color:var(--ink-3)">{esc(live)}</span>' if live else ""
+    )
+    return (
+        '<div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;'
+        'background:var(--surface);border:1px solid var(--line);border-radius:10px;'
+        'padding:.45rem .75rem;margin-bottom:.8rem">'
+        f"{left}<span style='margin-left:auto'>{right}</span></div>"
+    )

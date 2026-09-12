@@ -16,7 +16,9 @@ Meantime is the agent that lives in that gap. It has already read his discharge 
 
 ## The interface
 
-Two views over the same session, switched at the top.
+Two views over the same session, switched at the top. It **opens on Conversation** deliberately: the dashboard is *about* the product, the chat *is* it, and a dashboard opened cold has no verdict, no escalations and an empty inbox. The chat's empty state does the differentiating work immediately — *"You are day 4 after your right total knee arthroplasty. I have your discharge summary here."*
+
+So that you don't have to choose, a thin strip under the masthead carries the credibility signal into the chat view: how many rules are in force, the evidence sources behind them, and that the content is live. Once a verdict exists it narrows to the rule that actually answered and only that rule's sources — `URGENT · decided by rule K1 · MedlinePlus NHS AAOS` — with one button through to the full dashboard.
 
 **Conversation** is the product: chat, with a sidebar that pins the urgency badge and keeps everything else one click away — why this answer (the rules that fired, with their sources), the possibilities list, the full record, the actions taken.
 
