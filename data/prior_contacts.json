@@ -1,0 +1,30 @@
+{
+  "patient_id": "P-1001",
+  "note": "What Robert told Meantime before today. Seeded so the agent has a history to reason against from the first message, and kept out of reset_demo - this is the patient's record, not session state.",
+  "entries": [
+    {
+      "days_ago": 2,
+      "phase": "post_op",
+      "entry": "Swelling across the knee and down the shin, no calf symptoms. Expected recovery. Advised ice and elevation.",
+      "level": "MONITOR",
+      "symptoms": ["knee_swelling", "shin_swelling"],
+      "rules": ["M1"]
+    },
+    {
+      "days_ago": 1,
+      "phase": "post_op",
+      "entry": "Pain not controlled overnight despite taking oxycodone as prescribed. Care team messaged.",
+      "level": "CONTACT_TEAM",
+      "symptoms": ["pain_uncontrolled"],
+      "rules": ["K8"]
+    },
+    {
+      "days_ago": 1,
+      "phase": "post_op",
+      "entry": "Asked whether the incision could get wet in the shower. Pointed at the discharge instructions: dressing stays on and dry until the 2-week wound check.",
+      "level": "MONITOR",
+      "symptoms": [],
+      "rules": []
+    }
+  ]
+}

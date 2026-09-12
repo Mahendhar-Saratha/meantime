@@ -295,3 +295,22 @@ def test_needs_assessment_detects_a_turn_with_no_verdict():
     assert needs_assessment([])
     assert needs_assessment([{"tool": "log_symptom", "output": {}}])
     assert not needs_assessment([{"tool": "assess_urgency", "output": {"level": "MONITOR"}}])
+
+
+def test_needs_lookup_only_when_the_rules_came_back_uncertain():
+    from agent import needs_lookup
+
+    uncertain = [{"tool": "assess_urgency", "output": {"level": "UNCERTAIN", "matched": []}}]
+    assert needs_lookup(uncertain)
+    assert not needs_lookup(uncertain + [{"tool": "lookup_guidance", "output": {}}])
+    assert not needs_lookup([{"tool": "assess_urgency", "output": {"level": "URGENT", "matched": []}}])
+    assert not needs_lookup([])
+
+
+def test_recurrence_escalates_pain_that_was_already_reported():
+    """The alert-system behaviour: same complaint, second time, moves up."""
+    first = assess(report([sx("pain_uncontrolled")]), CTX, RULES)
+    assert first["level"] == "CONTACT_TEAM"
+    again = assess(report([sx("pain_uncontrolled")]), dict(CTX, history_symptoms=["pain_uncontrolled"]), RULES)
+    assert again["level"] == "URGENT"
+    assert again["top_rule"] == "K8"

@@ -10,6 +10,7 @@ import json
 
 import db
 import engine
+import sources
 
 _RULES: list[dict] | None = None
 _CONDITIONS: list[dict] | None = None
@@ -72,6 +73,62 @@ def explore_possibilities(symptom_report: dict, conv_id: str | None = None, phas
     }
 
 
+def lookup_guidance(
+    query: str, patient_words: str = "", conv_id: str | None = None, phase: str = DEFAULT_PHASE
+) -> dict:
+    """Fetch authoritative content for something the curated rules do not cover.
+
+    Live MedlinePlus, plus the FDA label when the question is about a medicine.
+    This returns CONTENT, never a verdict - assess_urgency still owns urgency,
+    and nothing here may lower what it returned.
+    """
+    ctx = db.get_patient_context(phase=phase)
+    found = sources.search_guidance(query)
+    drug = sources.drug_lookup(query) if len(query.split()) <= 2 else None
+
+    # What about this patient makes the answer different. For explaining, not
+    # for deciding.
+    flags = []
+    if ctx.get("on_anticoagulant"):
+        flags.append(f"on {ctx['anticoagulant_name']}, a blood thinner")
+    if ctx.get("on_opioid"):
+        flags.append("on oxycodone")
+    if ctx.get("post_op_day") is not None:
+        flags.append(f"post-op day {ctx['post_op_day']} after {ctx['procedure']}")
+    if ctx.get("days_until_surgery") is not None:
+        flags.append(f"{ctx['days_until_surgery']} days before {ctx['procedure']}")
+    flags += [f"has {c['name']}" for c in ctx.get("conditions", [])]
+    flags += [f"allergic to {a['substance']}" for a in ctx.get("allergies", [])]
+
+    return {
+        "query": query,
+        "patient_words": patient_words,
+        "status": found["status"],
+        "results": found["results"],
+        "count": found["count"],
+        "drug": drug,
+        "patient_context": flags,
+        "if_empty": (
+            "Nothing came back for that term. Say so plainly, try one broader term if it is worth it, "
+            "and otherwise point them at a human. Do not fill the gap from memory."
+        ),
+        "boundary": (
+            "This is reference content, not a verdict. It cannot raise or lower the urgency level "
+            "assess_urgency returned."
+        ),
+    }
+
+
+def patient_history(conv_id: str | None = None, phase: str = DEFAULT_PHASE) -> dict:
+    """What this patient has reported before today."""
+    ctx = db.get_patient_context(phase=phase)
+    return {
+        "contacts": ctx.get("history", []),
+        "symptoms_reported_before": ctx.get("history_symptoms", []),
+        "count": len(ctx.get("history", [])),
+    }
+
+
 def message_care_team(
     level: str,
     summary: str,
@@ -130,6 +187,8 @@ IMPLEMENTATIONS = {
     "get_patient_context": get_patient_context,
     "assess_urgency": assess_urgency,
     "explore_possibilities": explore_possibilities,
+    "lookup_guidance": lookup_guidance,
+    "patient_history": patient_history,
     "message_care_team": message_care_team,
     "schedule_checkin": schedule_checkin,
     "log_symptom": log_symptom,
@@ -226,6 +285,35 @@ TOOL_SCHEMAS = [
             },
             "required": ["symptom_report"],
         },
+    },
+    {
+        "name": "lookup_guidance",
+        "description": (
+            "Look up authoritative patient guidance, live, for something the curated rules do not cover - "
+            "a symptom outside the vocabulary, a general question, a medicine. Queries MedlinePlus (NIH/NLM) "
+            "and the FDA drug label. Pass a SHORT topic term of one to three words ('muscle cramps', "
+            "'wound care', 'ibuprofen'), NOT the patient's sentence - a full question returns nothing. "
+            "This returns reference content only: it can never raise or lower the level assess_urgency "
+            "returned, and you must still run assess_urgency. If it comes back empty, say so rather than "
+            "answering from memory."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "one to three words, a topic not a sentence"},
+                "patient_words": {"type": "string", "description": "what he actually asked, for the record"},
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "patient_history",
+        "description": (
+            "What this patient has told Meantime before today, with the level each time. Call it when he "
+            "says something is still happening, is worse, or is back - a symptom that was already reported "
+            "and has not settled is not the same as a first report, and the rules escalate on it."
+        ),
+        "input_schema": {"type": "object", "properties": {}},
     },
     {
         "name": "message_care_team",

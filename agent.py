@@ -111,6 +111,23 @@ call it with an empty symptoms list and let the rules answer. Vagueness is not a
 check; it is the case the check exists for. You may still ask one short question in the same reply, but \
 never end such a turn with no assessment.
 
+8. When the rules do not cover what he raised - assess_urgency came back UNCERTAIN, or he asked a \
+general question rather than reporting a symptom - call lookup_guidance and answer from what comes back. \
+Pass a SHORT topic term of one to three words, not his sentence. Paraphrase the content, name MedlinePlus \
+as the source, and tie it to his record using the patient_context the tool returns ("this matters more for \
+you because you are on a blood thinner"). If it returns nothing, say so and do not answer from memory.
+
+WHAT A LOOKUP CANNOT DO
+lookup_guidance returns reference content. It is not a verdict and it cannot move the level. If \
+assess_urgency said UNCERTAIN, a reassuring page does not make it fine - he still gets the helpline, and \
+the page is extra on top. If it said URGENT, nothing you read anywhere softens that.
+
+HISTORY
+He has talked to you before. Call patient_history when he says something is still going, is worse, or is \
+back, or when you want to know whether this is new. A symptom he already reported that has not settled is \
+not a first report, and the rules escalate on exactly that - so run assess_urgency again after you look, \
+and say plainly what changed: "you told me about this yesterday and it has not settled, which moves it up."
+
 RULES YOU NEVER BREAK
 - Never diagnose. Say "signs that can go with a blood clot", not "you have a DVT". Even when you are \
 listing possibilities, every one of them stays a possibility.
@@ -228,15 +245,38 @@ ENFORCE_ASSESSMENT = (
 )
 
 
+ENFORCE_LOOKUP = (
+    "[system note, not from Robert] The curated rules did not cover that - assess_urgency came back "
+    "UNCERTAIN. Call lookup_guidance now with a short topic term (one to three words) for what he "
+    "described, and give him what comes back, tied to his record. Add it as ONE short paragraph - he has "
+    "already read your reply, so do not restate the question, the helpline or the reasoning. Keep the "
+    "helpline standing: the lookup is extra information and it does not change the level."
+)
+
+
 def needs_assessment(events: list) -> bool:
     """True when a turn produced no urgency verdict."""
     return not any(event["tool"] == "assess_urgency" for event in events)
 
 
+def needs_lookup(events: list) -> bool:
+    """True when the rules came back UNCERTAIN and nothing was looked up.
+
+    The promise is that when the curated rules do not cover something, the
+    system goes and finds real guidance. A prompt rule alone does not keep that
+    promise - the model will sometimes ask a question and stop instead.
+    """
+    assessment = latest_assessment(events)
+    if not assessment or assessment["level"] != "UNCERTAIN":
+        return False
+    return not any(event["tool"] == "lookup_guidance" for event in events)
+
+
 def run_turn(conv_id: str, history: list, user_text: str, phase: str = "post_op") -> tuple[str, list]:
     """One patient turn: run the model until it stops calling tools.
 
-    If it finishes without running the rules, it is sent back to do it.
+    If it finishes without running the rules, or the rules did not cover it and nothing
+    was looked up, it is sent back.
     """
     history.append({"role": "user", "content": user_text})
     ctx = db.get_patient_context(phase=phase)
@@ -246,6 +286,12 @@ def run_turn(conv_id: str, history: list, user_text: str, phase: str = "post_op"
 
     if needs_assessment(events):
         history.append({"role": "user", "content": ENFORCE_ASSESSMENT})
+        more_said, more_events = _tool_loop(conv_id, history, system, phase)
+        said += more_said
+        events += more_events
+
+    if needs_lookup(events):
+        history.append({"role": "user", "content": ENFORCE_LOOKUP})
         more_said, more_events = _tool_loop(conv_id, history, system, phase)
         said += more_said
         events += more_events

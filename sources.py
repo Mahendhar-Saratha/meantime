@@ -348,3 +348,46 @@ if __name__ == "__main__":
     print("topic:", topic["title"], "|", topic["url"])
     for study in trials("knee osteoarthritis"):
         print("trial:", study["nct"], study["status"], "|", study["title"][:70])
+
+
+# --- open-ended lookup ----------------------------------------------------
+
+def search_guidance(query: str, limit: int = 3) -> dict:
+    """Look up whatever the patient just raised, live, against MedlinePlus.
+
+    This exists for the case the curated rules do not cover. It returns
+    *content*, never a verdict: the urgency answer still comes from engine.py,
+    and nothing here may lower it.
+    """
+    url = ENDPOINTS["medlineplus_search"][1] + "?" + urllib.parse.urlencode(
+        {"db": "healthTopics", "term": query, "retmax": limit}
+    )
+    body, status = _fetch(url, ttl=6 * 3600)
+    results: list[dict] = []
+    if body:
+        try:
+            root = ET.fromstring(body)
+            for doc in root.findall(".//document")[:limit]:
+                fields = {c.get("name"): "".join(c.itertext()) for c in doc.findall("content")}
+                title = _strip(fields.get("title", ""), 120)
+                if not title:
+                    continue
+                results.append(
+                    {
+                        "title": title,
+                        "url": doc.get("url"),
+                        "summary": _strip(fields.get("FullSummary", ""), 420),
+                        "source": "MedlinePlus (NIH/NLM)",
+                    }
+                )
+        except ET.ParseError:
+            pass
+    return {"query": query, "status": status, "results": results, "count": len(results)}
+
+
+def drug_lookup(query: str) -> dict | None:
+    """If the question is about a medicine, get the real label warning."""
+    profile = drug_profile(query.strip().lower())
+    if not profile.get("rxcui") and not profile.get("warning"):
+        return None
+    return profile

@@ -412,7 +412,15 @@
       "triggers": [
         "pain_uncontrolled"
       ],
-      "rationale": "Pain that your prescribed medicine is not controlling is worth a call so the plan can be adjusted.",
+      "modifiers": [
+        {
+          "if": [
+            "symptom_recurring"
+          ],
+          "level": "URGENT"
+        }
+      ],
+      "rationale": "Pain that your prescribed medicine is not controlling is worth a call so the plan can be adjusted. If you already reported it and it has not improved, it needs the surgical team today rather than another message.",
       "action": "Keep taking your medicines exactly as prescribed and do not double up. Write down when you took each dose so the team can see the pattern.",
       "source": "MP",
       "source_url": "https://medlineplus.gov/ency/patientinstructions/000170.htm"

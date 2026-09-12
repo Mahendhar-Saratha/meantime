@@ -72,6 +72,8 @@ TOOL_LABEL = {
     "get_patient_context": "Patient record loaded",
     "assess_urgency": "Rules checked",
     "explore_possibilities": "Possibilities looked up",
+    "lookup_guidance": "Looked it up, live",
+    "patient_history": "History checked",
     "message_care_team": "Care team messaged",
     "schedule_checkin": "Check-in scheduled",
     "log_symptom": "Diary entry logged",
@@ -118,6 +120,13 @@ def event_rows() -> list[tuple]:
             detail = ", ".join(m["id"] for m in out.get("matched", [])) or "no rule matched"
         elif event["tool"] == "explore_possibilities":
             detail = ", ".join(p["name"] for p in out.get("possibilities", [])) or "nothing matched"
+        elif event["tool"] == "lookup_guidance":
+            titles = ", ".join(r["title"] for r in out.get("results", [])) or "nothing found"
+            detail = f"“{out.get('query', '')}” → {titles} · MedlinePlus ({out.get('status', '')})"
+        elif event["tool"] == "patient_history":
+            detail = f"{out.get('count', 0)} prior contacts · " + (
+                ", ".join(out.get("symptoms_reported_before", [])) or "no symptoms on record"
+            )
         elif event["tool"] == "message_care_team":
             detail = str(out.get("sent_to", ""))
         elif event["tool"] == "schedule_checkin":
@@ -240,6 +249,18 @@ with st.sidebar:
                     unsafe_allow_html=True,
                 )
 
+    if ctx.get("history"):
+        with st.expander(f"Before today · {len(ctx['history'])} contacts", expanded=False):
+            st.caption("What he has already told Meantime. A symptom that is back is not a first report.")
+            for item in ctx["history"]:
+                st.markdown(
+                    f"<div style='font-size:.78rem;margin-bottom:.45rem'>"
+                    f"{ui.level_pill(item['level'])} <span style='color:var(--ink-3);font-size:.72rem'>"
+                    f"{ui.esc(item['when'])}</span><br>"
+                    f"<span style='color:var(--ink-2);line-height:1.4'>{ui.esc(item['entry'])}</span></div>",
+                    unsafe_allow_html=True,
+                )
+
     with st.expander("The record", expanded=False):
         st.markdown("**Conditions**")
         for condition in ctx["conditions"]:
@@ -327,6 +348,7 @@ if view == "Dashboard":
         e for e in st.session_state.events if e["tool"] == "message_care_team" and not e["output"].get("error")
     ]
     checked = [e for e in st.session_state.events if e["tool"] == "assess_urgency"]
+    lookups = [e for e in st.session_state.events if e["tool"] == "lookup_guidance"]
 
     if phase == "post_op":
         where_big, where_sub = f"Day {ctx['post_op_day']}", "after right total knee arthroplasty"
@@ -355,6 +377,13 @@ if view == "Dashboard":
                     "Rules in force",
                     str(len(active_rules)),
                     f"of {len(ALL_RULES)} in the library, for this phase",
+                ),
+                ui.stat_card(
+                    "Live lookups",
+                    str(len(lookups)),
+                    "when the rules did not cover it, it went and found out"
+                    if lookups
+                    else "fires when the rules do not cover something",
                 ),
             ]
         ),

@@ -30,6 +30,9 @@ CREATE TABLE IF NOT EXISTS discharge_records (
 CREATE TABLE IF NOT EXISTS scheduled_procedures (
     booking_id TEXT PRIMARY KEY, patient_id TEXT, procedure_code TEXT,
     surgery_date TEXT, json_booking TEXT);
+CREATE TABLE IF NOT EXISTS prior_contacts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, patient_id TEXT, occurred_at TEXT, phase TEXT,
+    entry TEXT, level TEXT, symptoms TEXT, rules TEXT);
 CREATE TABLE IF NOT EXISTS conversations (
     conv_id TEXT PRIMARY KEY, patient_id TEXT, started_at TEXT);
 CREATE TABLE IF NOT EXISTS symptom_reports (
@@ -92,6 +95,8 @@ def seed() -> None:
         discharge = json.load(fh)
     with open(os.path.join(DATA_DIR, "scheduled_procedure.json"), encoding="utf-8") as fh:
         booking = json.load(fh)
+    with open(os.path.join(DATA_DIR, "prior_contacts.json"), encoding="utf-8") as fh:
+        prior = json.load(fh)
 
     with connect() as conn:
         conn.execute(
@@ -118,6 +123,24 @@ def seed() -> None:
                 json.dumps(booking),
             ),
         )
+        # Prior contacts are the patient's history, not session state, so they
+        # are reseeded from scratch rather than accumulated.
+        conn.execute("DELETE FROM prior_contacts WHERE patient_id=?", (prior["patient_id"],))
+        today = demo_today()
+        for item in prior["entries"]:
+            conn.execute(
+                "INSERT INTO prior_contacts (patient_id, occurred_at, phase, entry, level, symptoms, rules)"
+                " VALUES (?,?,?,?,?,?,?)",
+                (
+                    prior["patient_id"],
+                    (today - timedelta(days=item["days_ago"])).isoformat(),
+                    item["phase"],
+                    item["entry"],
+                    item["level"],
+                    ",".join(item["symptoms"]),
+                    ",".join(item["rules"]),
+                ),
+            )
 
 
 def load_rules() -> list[dict]:
@@ -139,6 +162,38 @@ def load_conditions() -> list[dict]:
 def load_conditions_file() -> dict:
     with open(os.path.join(DATA_DIR, "conditions.json"), encoding="utf-8") as fh:
         return json.load(fh)
+
+
+def patient_history(patient_id: str = PATIENT_ID, phase: str | None = None) -> list[dict]:
+    """What this patient has told Meantime before today, oldest first."""
+    with connect() as conn:
+        if phase:
+            rows = conn.execute(
+                "SELECT * FROM prior_contacts WHERE patient_id=? AND phase=? ORDER BY occurred_at",
+                (patient_id, phase),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM prior_contacts WHERE patient_id=? ORDER BY occurred_at", (patient_id,)
+            ).fetchall()
+    today = demo_today()
+    out = []
+    for row in rows:
+        occurred = date.fromisoformat(row["occurred_at"])
+        days = (today - occurred).days
+        out.append(
+            {
+                "date": row["occurred_at"],
+                "days_ago": days,
+                "when": "today" if days == 0 else ("yesterday" if days == 1 else f"{days} days ago"),
+                "phase": row["phase"],
+                "entry": row["entry"],
+                "level": row["level"],
+                "symptoms": [s for s in (row["symptoms"] or "").split(",") if s],
+                "rules": [r for r in (row["rules"] or "").split(",") if r],
+            }
+        )
+    return out
 
 
 # --- the merged context ---------------------------------------------------
@@ -180,6 +235,8 @@ def _base_context(baseline: dict, today: date, phase: str) -> dict:
         "allergies": baseline["allergies"],
         "today": today.isoformat(),
         "helpline": baseline["nurse_helpline"],
+        "history": [],
+        "history_symptoms": [],
         # defaults the phase blocks below override where they apply
         "procedure_code": None,
         "on_anticoagulant": False,
@@ -198,10 +255,13 @@ def get_patient_context(patient_id: str = PATIENT_ID, phase: str = "post_op") ->
     discharge summary. Same patient, three points on the same timeline.
     """
     baseline, discharge, booking = _load_records(patient_id)
+    history = patient_history(patient_id, phase)
+    history_symptoms = sorted({s for h in history for s in h["symptoms"]})
 
     if phase == "no_procedure":
         today = demo_today()
         ctx = _base_context(baseline, today, phase)
+        ctx["history"], ctx["history_symptoms"] = history, history_symptoms
         ctx.update(
             {
                 "procedure": None,
@@ -216,6 +276,7 @@ def get_patient_context(patient_id: str = PATIENT_ID, phase: str = "post_op") ->
         # is identical every time the demo is run.
         today = surgery_date - timedelta(days=booking["demo_days_until_surgery"])
         ctx = _base_context(baseline, today, phase)
+        ctx["history"], ctx["history_symptoms"] = history, history_symptoms
 
         upcoming = sorted(
             (a for a in booking["pre_op_appointments"] if date.fromisoformat(a["date"]) >= today),
@@ -250,6 +311,7 @@ def get_patient_context(patient_id: str = PATIENT_ID, phase: str = "post_op") ->
     # post_op
     today = demo_today()
     ctx = _base_context(baseline, today, phase)
+    ctx["history"], ctx["history_symptoms"] = history, history_symptoms
     meds = discharge["discharge_medications"]
     surgery_date = date.fromisoformat(discharge["surgery_date"])
 

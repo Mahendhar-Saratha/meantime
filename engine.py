@@ -115,6 +115,10 @@ def _condition(cond: str, ctx: dict, report: dict, names: set[str]) -> bool:
         return any((s.get("severity") == "severe") for s in report.get("symptoms") or [])
     if cond == "duration_gt_24h":
         return (report.get("duration_hours") or 0) > 24
+    if cond == "symptom_recurring":
+        # The patient has raised one of these before. Something that was worth a
+        # call yesterday and is still here today is not the same as a first report.
+        return bool(set(ctx.get("history_symptoms") or []) & names)
     if cond == "temp_f_ge_101":
         temp = (report.get("vitals") or {}).get("temp_f")
         return temp is not None and float(temp) >= 101.0

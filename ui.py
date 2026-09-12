@@ -9,7 +9,7 @@ from __future__ import annotations
 import html
 
 WORDMARK = "Meantime"
-TAGLINE = "Precision triage for the gap between appointments"
+TAGLINE = "A precision alert system for the gap between appointments"
 STRAPLINE = "The model understands language · Rules decide urgency · Humans see every escalation"
 
 # --- palette --------------------------------------------------------------

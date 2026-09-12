@@ -1,6 +1,6 @@
 # Meantime
 
-**The agent for the gaps between appointments.**
+**A precision alert system for the gaps between appointments.**
 
 > 📹 **Demo video:** _add link here_
 
@@ -29,6 +29,43 @@ Two views over the same session, switched at the top.
 - **Care team inbox** — the actual messages the humans received, with who got them and how fast.
 - **Session activity** — every tool call in order.
 - **Live from the source** — see below.
+
+---
+
+## When the rules don't cover it
+
+The 44 curated rules are the safety floor, not the ceiling. Robert can say anything, and most of what a worried person says at 11pm isn't in any rule file.
+
+So when `assess_urgency` comes back **UNCERTAIN**, the agent calls `lookup_guidance` — a live MedlinePlus search for whatever he actually raised, plus the FDA label if it's a medicine — and answers from what comes back, tied to his record. It also calls `patient_history` when something is *still* going or *back*, because a symptom already reported and not settled is not a first report.
+
+A real exchange, unedited:
+
+> **Robert:** *my leg keeps cramping at night, it wakes me up*
+>
+> `assess_urgency` → **UNCERTAIN** · no rule matched
+> `lookup_guidance("leg cramps night")` → live MedlinePlus → *Muscle Cramps*
+>
+> **Meantime:** *"MedlinePlus says nighttime leg cramps are common, sudden muscle spasms… But that's just general background. It doesn't change what I told you: the rules came back unable to sort this out from here, so the helpline call still stands. You're 4 days out and on apixaban, and calf pain is specifically on your surgeon's warning list."*
+
+It fetched the reassuring page and **still refused to reassure**. That is the entire architecture in one answer: a general symptom checker would have stopped at "common and harmless."
+
+Two invariants make this reliable rather than hopeful, both enforced in `agent.py`, not in the prompt:
+
+- `needs_assessment` — a turn that ends without running the rules is sent back to run them.
+- `needs_lookup` — a turn that ends UNCERTAIN without looking anything up is sent back to look. The promise is that when the rules don't cover something the system goes and finds out; a prompt rule alone kept breaking that promise in testing.
+
+**And a lookup can never move the level.** Not up, not down. The tool result says so, the prompt says so, and the level on the badge comes only from the engine.
+
+### It watches, not just answers
+
+`data/prior_contacts.json` seeds what Robert told Meantime on previous days. The engine has a `symptom_recurring` condition, and rule K8 uses it:
+
+| | |
+|---|---|
+| *"the pain isn't controlled"* — first time | **CONTACT_TEAM** — message the team, they'll call in 24–48h |
+| *"the pain still isn't controlled, same as I told you yesterday"* | **URGENT** — K8 escalates on recurrence; call the on-call line today |
+
+That's the difference between a symptom checker and an alert system: the second answer is different because of the first one.
 
 ---
 
@@ -274,7 +311,7 @@ Path B is the interesting one: "swelling is normal after knee surgery" (rule M1)
 
 ## What's next
 
-1. **MCP server** — expose the six tools over the Model Context Protocol so the same agent works from any MCP client.
+1. **MCP server** — expose the eight tools over the Model Context Protocol so the same agent works from any MCP client.
 2. **The check-in actually firing** — a scheduled follow-up turn instead of a row in a table.
 3. **A care-team view** — the second half of the loop: what the nurse sees when a message arrives, across all three phases.
 4. **A second procedure** — a `hip` block in `red_flags.json`. The phase machinery is already procedure-agnostic.
