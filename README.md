@@ -4,15 +4,48 @@
 
 > 📹 **Demo video:** _add link here_
 
-Robert had a knee replacement four days ago. His follow-up is in two weeks. It's 11pm and his calf hurts. His options are Google, ChatGPT, or the ER.
-
-Meantime is the agent that lives in that gap. It has already read his discharge summary. It knows he is on a blood thinner. When he describes what he feels, it matches his words against a curated warning list built from MedlinePlus, the NHS, and the American Academy of Orthopaedic Surgeons, tells him exactly how urgent it is and what to do next, and messages his care team. When it can't tell, it doesn't guess. It gives him the nurse line.
-
-**Three sentences:** The model understands language. Rules decide urgency. Humans see every escalation.
-
 ![Meantime, Path A](docs/path-a.png)
 
 ---
+
+## What we're solving
+
+Robert had a knee replacement four days ago. His follow-up is in two weeks. It's 11pm and his calf hurts. His options are Google, ChatGPT, or the emergency room — and none of them has read his discharge summary.
+
+That gap fails in **both directions at once**:
+
+- **People who need care talk themselves out of it.** "Swelling is normal after knee surgery" is true — and it is exactly the wrong answer when the swelling is in the calf and the patient is four days post-op on a blood thinner.
+- **People who are recovering normally end up in an ER at midnight.** Search "bruising on a blood thinner" and you get haematoma, internal bleeding, seek immediate care. At day four, that bruising is expected.
+
+The same sentence needs a different answer depending on the procedure, the day, the medications and what the patient said last week. None of the tools people actually reach for at 11pm has any of that.
+
+## How it works
+
+| | |
+|---|---|
+| **1. It already has the record** | Baseline history plus the booking or the discharge summary, merged. `post_op_day`, `on_anticoagulant` and days-to-next-appointment are computed, not typed. |
+| **2. Claude reads what he wrote** | And turns it into a structured symptom report using a fixed 94-term clinical vocabulary. Understanding the language is the *only* thing the model does here. |
+| **3. A deterministic engine picks the level** | 44 curated rules, each with a rationale, a patient-facing action and a citation. Pure functions, no network, no model — the same input gives the same answer every time. |
+| **4. The system acts** | Messages the right human for that phase, schedules a check-in, writes the diary entry. |
+| **5. When no rule covers it, it goes and finds out** | Live MedlinePlus and FDA lookups for what he actually said — without ever letting a fetched page change the level. |
+
+**In three sentences:** The model understands language. Rules decide urgency. Humans see every escalation.
+
+## Why this is different
+
+**It knows who is asking.** Not a generic patient — *this* one, on day four, on apixaban, with a surgeon's warning list and three things he already reported this week.
+
+**The urgency decision can be audited.** Every level traces to a numbered line in a JSON file with a source link. A surgeon can read the rule; a patient can read the rule. The model is not permitted to set the level at all, so it cannot talk itself into "probably fine".
+
+**"I don't know" is a supported answer.** Nothing matching is never reassurance — it is `UNCERTAIN`, which means a phone number. Most symptom checkers have no way to say this, so they guess fluently.
+
+**A live lookup can never lower an alert.** Asked about nightly leg cramps, it fetched MedlinePlus, reported that they are common and unrelated to surgery, and *still* held the helpline — because the rules could not sort it out. That single behaviour is the difference between this and a search box.
+
+**It remembers.** "The pain isn't controlled" is a message to the team the first time and a same-day call the second, because something already reported that hasn't settled is not a first report.
+
+**And you can watch it narrow.** The dashboard shows the rule filter re-run on every message: `44` → `31` for this phase → `2` triggered by what he just said → `1` surviving, naming the rule that got ruled out and the word that did it.
+
+A point-by-point comparison against general assistants is in [Why not just ask ChatGPT](#why-not-just-ask-chatgpt) below.
 
 ## The interface
 
