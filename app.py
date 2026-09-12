@@ -400,11 +400,19 @@ if view == "Dashboard":
     left, right = st.columns([1.55, 1], gap="medium")
 
     with left:
-        trace = (assessment or {}).get("trace") or {}
+        trace = (assessment or {}).get("trace") or {
+            # At rest: the narrowings that come from the patient, not the message.
+            "library": len(ALL_RULES),
+            "procedure": len(
+                [r for r in ALL_RULES if r["applies_to"] in ("general", ctx["procedure_code"])]
+            ),
+            "phase": len(active_rules),
+            "pending": True,
+        }
         st.markdown(
             ui.heading(
                 "The rule filter",
-                "re-run on every message, against what he actually said" if trace else "waiting for a message",
+                "re-run on every message, against what he actually said",
             ),
             unsafe_allow_html=True,
         )

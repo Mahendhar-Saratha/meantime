@@ -587,23 +587,26 @@ def filter_funnel(trace: dict, phase_label: str, level: str) -> str:
     happen on every message.
     """
     if not trace:
-        return (
-            '<div class="mt-empty">No message assessed yet. The funnel fills in as soon as '
-            "Robert says something.</div>"
-        )
+        return '<div class="mt-empty">Waiting for the first message.</div>'
 
+    # Before anything is said, the first three narrowings are already known -
+    # they come from who the patient is, not from what he typed. Showing them at
+    # rest makes it obvious the filter is real and already partly applied,
+    # rather than leaving the panel looking like a static catalogue.
+    pending = trace.get("pending", False)
     said = ", ".join(trace.get("symptoms") or []) or "nothing that maps to a symptom"
     triggered = trace.get("triggered") or []
     surviving = trace.get("surviving") or []
 
-    def step(n, label, note="", emphasis=False, zero=False):
+    def step(n, label, note="", emphasis=False, zero=False, awaiting=False):
         color = "var(--ink)" if not emphasis else LEVEL_COLOR.get(level, "var(--ink)")
-        muted = "var(--ink-3)" if (zero and not n) else color
-        width = max(4.0, (n / max(trace.get("library", 1), 1)) * 100)
+        muted = "var(--ink-3)" if (awaiting or (zero and not n)) else color
+        shown = "&mdash;" if awaiting else str(n)
+        width = 0.0 if awaiting else max(4.0, (n / max(trace.get("library", 1), 1)) * 100)
         bar_color = LEVEL_COLOR.get(level, "#5f6874") if emphasis else "#c8ccd2"
         return f"""<div style="display:flex;align-items:center;gap:.7rem;padding:.3rem 0">
   <div style="font-family:ui-monospace,monospace;font-size:1rem;font-weight:700;color:{muted};
-              width:2.4rem;text-align:right;font-variant-numeric:tabular-nums">{n}</div>
+              width:2.4rem;text-align:right;font-variant-numeric:tabular-nums">{shown}</div>
   <div style="flex:0 0 34%;min-width:0">
     <div style="height:7px;border-radius:4px;background:#eceef1;overflow:hidden">
       <div style="height:100%;width:{width:.1f}%;background:{bar_color}"></div></div>
@@ -619,11 +622,26 @@ def filter_funnel(trace: dict, phase_label: str, level: str) -> str:
         step(
             len(triggered),
             "triggered by what he just said",
-            f"· {esc(said)}" if triggered else "· nothing matched, which is why this is UNCERTAIN",
+            "· recomputed on every message"
+            if pending
+            else (f"· {esc(said)}" if triggered else "· nothing matched, which is why this is UNCERTAIN"),
             zero=True,
+            awaiting=pending,
         ),
-        step(len(surviving), "survive the exclusions", f"· {', '.join(surviving)}" if surviving else ""),
+        step(
+            len(surviving),
+            "survive the exclusions",
+            "" if pending else (f"· {', '.join(surviving)}" if surviving else ""),
+            awaiting=pending,
+        ),
     ]
+    if pending:
+        return (
+            f'<div class="mt-card">{"".join(rows)}'
+            '<div style="margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--line-2);'
+            'font-size:.78rem;color:var(--ink-3)">The top three are already decided by who this '
+            "patient is. The last two are recomputed from scratch on every message he sends.</div></div>"
+        )
 
     dropped = ""
     for item in trace.get("excluded") or []:

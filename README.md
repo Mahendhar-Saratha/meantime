@@ -144,6 +144,33 @@ AAOS OrthoInfo and the NHS publish no open API, so rules citing them link to the
 
 ---
 
+## Are the rules actually dynamic?
+
+Two different things get called that word, and the honest answer is different for each.
+
+**What applies is recomputed on every message.** The rule set narrows five times against what the patient just said, and the dashboard shows it happening. For *"my knee is swollen and my right calf hurts"*:
+
+```
+44   rules in the library
+44   apply to this procedure        · knee replacement
+31   apply at this phase            · after discharge
+ 2   triggered by what he just said · calf_pain, knee_swelling     K1 · M1
+ 1   survive the exclusions         · M1 ruled out by calf_pain    K1
+→    URGENT via K1
+```
+
+Change the phase and it narrows differently — 31 after discharge, 19 waiting for surgery, 12 before any treatment. Say something else and the last two rows change again. None of that is precomputed.
+
+**The library itself is static, and that is deliberate.** All 44 rules are hand-written and reviewed. Nothing in the running system creates, edits or activates a rule, and no rule changes because of what a patient typed.
+
+That is not a missing feature. A system that drafts its own triage thresholds from patient language will drift, and it will drift in one direction — toward reassurance, because reassurance is what people respond well to and nobody complains about being wrongly told they were fine. The failure is silent, and it is the only failure in this domain that actually hurts someone.
+
+**The correct middle is the next thing to build.** When live lookups keep firing for something the rules don't cover, draft a **candidate rule** from the fetched source, mark it `UNREVIEWED`, surface it on the dashboard with its provenance — and never let it fire until a clinician approves it. The library grows out of real patient language; the approval gate is the point, not the obstacle.
+
+So: **the filter is dynamic, the authoring is governed.** Same split as everywhere else here — live content, local decision.
+
+---
+
 ## Three phases, one architecture
 
 The same worry arrives at three different points, and the right answer is different at each. Meantime covers all three with one engine and one rule file.
