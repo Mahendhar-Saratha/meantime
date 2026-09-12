@@ -364,3 +364,49 @@ def test_trace_narrows_differently_per_phase():
     assert assess(r, PRE_OP_CTX, RULES)["trace"]["phase"] == 19
     assert assess(r, dict(CTX, phase="post_op"), RULES)["trace"]["phase"] == 31
     assert assess(r, NO_PROC_CTX, RULES)["trace"]["phase"] == 12
+
+
+# --- the interlink: conversation turns feed the engine, not just prior days ---
+
+
+def test_recurrence_within_a_single_conversation(tmp_path, monkeypatch):
+    """Saying it once then again in the same chat escalates, exactly as it does
+    across days. Without this the conversation is context for the model only."""
+    import db as _db
+    import tools as _tools
+
+    monkeypatch.setattr(_db, "DB_PATH", str(tmp_path / "t.db"))
+    _db.seed()
+    # Clear the seeded previous days, so any escalation can only come from
+    # within this conversation.
+    with _db.connect() as conn:
+        conn.execute("DELETE FROM prior_contacts")
+    conv = _db.new_conversation()
+
+    said = {"symptoms": [sx("pain_uncontrolled")], "qualifiers": [], "patient_words": "it still hurts"}
+
+    first = _tools.assess_urgency(said, conv_id=conv, phase="post_op")
+    again = _tools.assess_urgency(said, conv_id=conv, phase="post_op")
+
+    assert first["level"] == "CONTACT_TEAM"   # first time: message the team
+    assert again["level"] == "URGENT"         # same words, second time: call today
+    assert again["top_rule"] == "K8"
+    assert "pain_uncontrolled" in _db.symptoms_reported_in(conv)
+
+
+def test_earlier_turns_are_read_before_the_current_one_is_stored(tmp_path, monkeypatch):
+    """The first message must not count itself as its own recurrence."""
+    import db as _db
+    import tools as _tools
+
+    monkeypatch.setattr(_db, "DB_PATH", str(tmp_path / "t.db"))
+    _db.seed()
+    conv = _db.new_conversation()
+    assert _db.symptoms_reported_in(conv) == set()
+
+    _tools.assess_urgency(
+        {"symptoms": [sx("constipation")], "qualifiers": [], "patient_words": "x"},
+        conv_id=conv,
+        phase="post_op",
+    )
+    assert _db.symptoms_reported_in(conv) == {"constipation"}

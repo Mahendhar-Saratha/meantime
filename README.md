@@ -24,6 +24,8 @@ A patient describes a symptom in their own words, at home, with no clinician ava
 
 Plus a general block that applies in every phase — chest pain, breathlessness, stroke signs, anaphylaxis, GI bleeding, and mental-health crisis.
 
+The 44 rules are curated from **MedlinePlus** (NIH/NLM), the **NHS** post-knee-replacement symptom checker and recovery guidance, **AAOS OrthoInfo**, the patient's **own discharge summary**, and the **988 Suicide & Crisis Lifeline**. Every rule carries its citation, and the dashboard links each one back to the source page.
+
 **It does not diagnose, does not give doses, and does not replace clinical judgement.** It decides how urgent something is and who needs to hear about it. Nothing matching is never "you're fine" — it is `UNCERTAIN`, which means a phone number.
 
 ### How to run it
@@ -46,7 +48,7 @@ Opens at `http://localhost:8501`. The rule engine runs without an API key — `p
 | **Language** | Python 3.11+ (built on 3.12) |
 | **Storage** | SQLite via the standard library — no ORM |
 | **Interface** | Streamlit — chat plus an evidence dashboard |
-| **Live data** | `urllib` against five public endpoints: MedlinePlus Connect, the MedlinePlus web service, RxNav/RxNorm, openFDA, ClinicalTrials.gov. No API keys |
+| **Live data** | `urllib` against five public endpoints, no keys and no registration: **MedlinePlus Connect** (NIH/NLM), the **MedlinePlus web service**, **RxNav/RxNorm** (NIH/NLM), **openFDA**, **ClinicalTrials.gov**. They supply evidence and open-ended lookups; they are never allowed to set the urgency level |
 | **Tests** | pytest — 35 tests against the real rule file, no mocking |
 | **Deliberately absent** | No LangChain, no vector database, no embeddings, no async. The urgency engine (`engine.py`) imports nothing but `re` — that is what makes it auditable |
 
@@ -86,11 +88,37 @@ Everything below — every rule, every demo path, every screenshot — runs agai
 |---|---|
 | **1. It already has the record** | Baseline history plus the booking or the discharge summary, merged. `post_op_day`, `on_anticoagulant` and days-to-next-appointment are computed, not typed. |
 | **2. Claude reads what he wrote** | And turns it into a structured symptom report using a fixed 94-term clinical vocabulary. Understanding the language is the *only* thing the model does here. |
-| **3. A deterministic engine picks the level** | 44 curated rules, each with a rationale, a patient-facing action and a citation. Pure functions, no network, no model — the same input gives the same answer every time. |
+| **3. A deterministic engine picks the level** | 44 curated rules, each with a rationale, a patient-facing action and a citation to **MedlinePlus** (NIH/NLM), the **NHS**, **AAOS OrthoInfo**, the patient's **own discharge summary**, or the **988 Lifeline**. Pure functions, no network, no model — the same input gives the same answer every time. |
 | **4. The system acts** | Messages the right human for that phase, schedules a check-in, writes the diary entry. |
 | **5. When no rule covers it, it goes and finds out** | Live MedlinePlus and FDA lookups for what he actually said — without ever letting a fetched page change the level. |
 
 **In three sentences:** The model understands language. Rules decide urgency. Humans see every escalation.
+
+## The verdict is an interlink, not a lookup
+
+No single input decides. The level comes out of five things read together, and changing any one of them changes the answer for the same words.
+
+| | what it contributes |
+|---|---|
+| **The conversation** | Not one message — the whole thread. Claude keeps every turn, asks a clarifying question when the answer would change the outcome, and re-runs the rules once it arrives. Symptoms raised earlier in the chat are fed back into the engine, so saying a thing twice is not the same as saying it once. |
+| **The patient record** | Baseline history, plus the booking or the discharge summary for the phase he is in. This decides which rules exist at all (44 → 31 after discharge, 19 waiting for surgery, 12 before treatment) and flips individual rules — `on_anticoagulant`, `post_op_day`, `on_opioid`. |
+| **His history** | What he told Meantime on previous days, and what he has already said in this conversation. The engine has a `symptom_recurring` condition; something already reported that has not settled is not a first report. |
+| **The curated rules** | 44 of them, with triggers, exclusions, required qualifiers and context modifiers — each citing MedlinePlus, the NHS, AAOS OrthoInfo, his own discharge paperwork, or the 988 Lifeline. |
+| **The live APIs** | MedlinePlus Connect, the MedlinePlus web service, RxNav/RxNorm, openFDA and ClinicalTrials.gov — for content the rules don't cover, and for the evidence shown beside the answer. **These inform, they never decide.** A fetched page cannot move the level in either direction. |
+
+Same words, different answer, because one input changed:
+
+| he says | and the answer is | because |
+|---|---|---|
+| *"my knee aches and it's stiff"* | `CONTACT_TEAM` before treatment · `MONITOR` pre-op · `MONITOR` post-op | the **record** — which phase he is in |
+| *"my leg is swollen"* → *"…and my calf hurts"* | `MONITOR` becomes `URGENT` | the **conversation** — the second message excludes rule M1 |
+| *"there's a bit of clear drainage"* | `MONITOR` on day 2 · `CONTACT_TEAM` on day 4 | the **record** — `post_op_day` crosses a modifier |
+| *"the pain isn't controlled"* | `CONTACT_TEAM` first time · `URGENT` said again | his **history** — within this chat or across days |
+| *"one leg is swollen"* with no detail | `UNCERTAIN`, then `URGENT` once he says which leg | the **conversation** — a required qualifier arrives on turn two |
+
+Every row in that table is covered by a test in [`tests/test_engine.py`](tests/test_engine.py) — they are behaviours, not intentions.
+
+That is what makes this a system rather than a symptom lookup. A search box has one input. This has five, and the rules are the only one allowed to set the level.
 
 ## Why this is different
 

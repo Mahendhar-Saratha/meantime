@@ -431,6 +431,29 @@ def _rows(table: str, conv_id: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def symptoms_reported_in(conv_id: str) -> set[str]:
+    """Canonical symptom names already reported EARLIER in this conversation.
+
+    The engine escalates on recurrence, and recurrence starts inside a single
+    conversation - not only across days. Read before the current report is
+    inserted, so it returns prior turns only.
+    """
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT json_report FROM symptom_reports WHERE conv_id=? ORDER BY id", (conv_id,)
+        ).fetchall()
+    names: set[str] = set()
+    for row in rows:
+        try:
+            report = json.loads(row["json_report"])
+        except (json.JSONDecodeError, TypeError):
+            continue
+        for symptom in report.get("symptoms") or []:
+            if symptom.get("name"):
+                names.add(symptom["name"])
+    return names
+
+
 def list_assessments_for_conv(conv_id: str) -> list[dict]:
     return _rows("assessments", conv_id)
 

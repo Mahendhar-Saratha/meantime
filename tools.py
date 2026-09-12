@@ -47,8 +47,18 @@ def get_patient_context(conv_id: str | None = None, phase: str = DEFAULT_PHASE) 
 
 
 def assess_urgency(symptom_report: dict, conv_id: str | None = None, phase: str = DEFAULT_PHASE) -> dict:
-    """The only place urgency is decided. Persists both the report and the result."""
+    """The only place urgency is decided. Persists both the report and the result.
+
+    The context handed to the engine is the interlink: the patient's record for
+    this phase, what he has reported on previous days, and what he has already
+    said earlier in THIS conversation. Recurrence starts inside one chat.
+    """
     ctx = db.get_patient_context(phase=phase)
+    if conv_id:
+        earlier = db.symptoms_reported_in(conv_id)  # read before this report is stored
+        if earlier:
+            ctx["earlier_this_conversation"] = sorted(earlier)
+            ctx["history_symptoms"] = sorted(set(ctx.get("history_symptoms") or []) | earlier)
     assessment = engine.assess(symptom_report, ctx, _rules())
     if conv_id:
         db.insert_symptom_report(conv_id, symptom_report)
