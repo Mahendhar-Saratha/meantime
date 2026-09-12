@@ -10,14 +10,31 @@
 
 ## What we're solving
 
-Robert had a knee replacement four days ago. His follow-up is in two weeks. It's 11pm and his calf hurts. His options are Google, ChatGPT, or the emergency room — and none of them has read his discharge summary.
+It's late. Something doesn't feel right. The hospital is behind you, the next appointment is weeks away, and whatever is happening in your body is happening **now**.
 
-That gap fails in **both directions at once**:
+You have three options. All three fail you, in different ways.
 
-- **People who need care talk themselves out of it.** "Swelling is normal after knee surgery" is true — and it is exactly the wrong answer when the swelling is in the calf and the patient is four days post-op on a blood thinner.
-- **People who are recovering normally end up in an ER at midnight.** Search "bruising on a blood thinner" and you get haematoma, internal bleeding, seek immediate care. At day four, that bruising is expected.
+**Search hands you the worst case, first.** Results are ranked by what's popular, not by what's likely for you. Two scrolls into any post-surgical symptom and you are reading about blood clots, sepsis and internal bleeding. You end up more frightened and no better informed, because none of it knows a single thing about you.
 
-The same sentence needs a different answer depending on the procedure, the day, the medications and what the patient said last week. None of the tools people actually reach for at 11pm has any of that.
+**A general assistant won't commit.** It is fluent, calm, and it ends where you began: *this could be normal, but it could also be serious — please consult your doctor.* It hedges because it genuinely has no basis to decide and no way to be held to an answer. So the triage stays yours to do, at 1am, in pain, alone.
+
+**The emergency room will answer — and charges you a night, a bill, and your dignity for it.** Nobody wants to be the person who came in over a bruise. That fear of over-reacting is strongest in exactly the people who should be going.
+
+So most people take the fourth option, the one nobody lists: **wait, and don't sleep.**
+
+That is the moment this is built for. The question at 11pm is not *what is this symptom* — search already does that, badly. It is **how worried should I be, right now, given everything about me**. Nothing a patient can reach at that hour will answer it, because answering it requires their record, and none of those tools has it.
+
+Getting it wrong costs in both directions. People who need care talk themselves out of it — *"swelling is normal after knee surgery"* is perfectly true, and exactly the wrong answer when the swelling is in the calf and you are on a blood thinner. People who are recovering normally lose a night in an ER over bruising that was expected. The same sentence needs a different answer depending on the procedure, the day, the medications, and what you said last week.
+
+**Meantime answers it.** It has already read the discharge summary. It commits to one of five urgency levels, tells you what to do, and sends the escalation to a named human. When it can't tell, it says so and gives you the nurse line — it never guesses to make you feel better.
+
+## The patient in this build
+
+Robert Hale, 67. Right knee replacement four days ago, home since Thursday, on apixaban — a blood thinner — to stop a clot forming. His wound check is in twelve days. His surgeon gave him a nine-item warning list on discharge, which is in a folder somewhere.
+
+It's 11pm and his calf hurts.
+
+Everything below — every rule, every demo path, every screenshot — runs against his record. He is entirely synthetic, as are his clinicians and every 555-prefixed phone number.
 
 ## How it works
 
