@@ -29,7 +29,13 @@ def live_bundle(phase: str, _ctx: dict, nonce: int = 0, force: bool = False) -> 
     """Public-API lookups for this patient. Cached so switching views does not
     re-hit NIH every rerun; sources.py also caches to disk for offline runs.
     `force` bypasses both, for the Refresh button."""
-    return sources.live_bundle(_ctx, force=force)
+    try:
+        return sources.live_bundle(_ctx, force=force)
+    except TypeError:
+        # Streamlit keeps imported modules in memory across reruns, so editing
+        # sources.py without restarting the server leaves an older signature
+        # loaded. Fall back rather than blank the panel mid-demo.
+        return sources.live_bundle(_ctx)
 
 st.set_page_config(page_title="Meantime", page_icon="🩺", layout="wide", initial_sidebar_state="expanded")
 st.markdown(ui.CSS, unsafe_allow_html=True)

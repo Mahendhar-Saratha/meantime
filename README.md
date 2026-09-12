@@ -206,6 +206,8 @@ python agent.py pre_op              # or no_procedure
 python -m pytest tests -q           # 28 rule-engine tests
 python db.py                        # print all three phase contexts
 python sources.py                   # hit the five public APIs and print what comes back
+
+**One gotcha while developing:** Streamlit re-runs `app.py` on every save, but it keeps *imported* modules in memory. Edit `engine.py`, `sources.py`, `db.py`, `agent.py` or `ui.py` and you must restart the server, or you will be running the old code against the new file — including signature mismatches that look like impossible errors.
 ```
 
 ---
