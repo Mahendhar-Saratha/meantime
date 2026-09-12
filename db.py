@@ -1,0 +1,300 @@
+"""SQLite storage and the merged patient context.
+
+Two JSON files go in (the record before surgery, and the discharge summary
+appended after it); one context dict comes out, with the fields that change the
+answer computed rather than typed: post_op_day, on_anticoagulant, days to the
+next appointment.
+
+DEMO_TODAY pins "today" so the demo behaves identically whenever it is run.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import sqlite3
+import uuid
+from datetime import date, datetime, timedelta
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(ROOT, "data")
+DB_PATH = os.path.join(ROOT, "meantime.db")
+PATIENT_ID = "P-1001"
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS patients (
+    patient_id TEXT PRIMARY KEY, name TEXT, dob TEXT, sex TEXT, json_baseline TEXT);
+CREATE TABLE IF NOT EXISTS discharge_records (
+    encounter_id TEXT PRIMARY KEY, patient_id TEXT, procedure_code TEXT,
+    surgery_date TEXT, json_discharge TEXT);
+CREATE TABLE IF NOT EXISTS conversations (
+    conv_id TEXT PRIMARY KEY, patient_id TEXT, started_at TEXT);
+CREATE TABLE IF NOT EXISTS symptom_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, conv_id TEXT, created_at TEXT, json_report TEXT);
+CREATE TABLE IF NOT EXISTS assessments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, conv_id TEXT, created_at TEXT, level TEXT,
+    matched_rule_ids TEXT, confidence TEXT, json_full TEXT);
+CREATE TABLE IF NOT EXISTS care_team_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, conv_id TEXT, created_at TEXT, level TEXT,
+    summary TEXT, sent_to TEXT, eta_hours INTEGER, status TEXT DEFAULT 'sent');
+CREATE TABLE IF NOT EXISTS checkins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, conv_id TEXT, created_at TEXT, due_at TEXT,
+    question TEXT, status TEXT DEFAULT 'scheduled');
+CREATE TABLE IF NOT EXISTS symptom_diary (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, patient_id TEXT, conv_id TEXT, created_at TEXT,
+    entry TEXT, level TEXT);
+"""
+
+CONVERSATION_TABLES = (
+    "conversations",
+    "symptom_reports",
+    "assessments",
+    "care_team_messages",
+    "checkins",
+    "symptom_diary",
+)
+
+
+# --- time -----------------------------------------------------------------
+
+def demo_today() -> date:
+    """The pinned demo date. Only drives post_op_day and appointment maths -
+    wall-clock timestamps on messages and check-ins stay real."""
+    return date.fromisoformat(os.environ.get("DEMO_TODAY") or "2026-09-12")
+
+
+def _now() -> str:
+    return datetime.now().isoformat(timespec="seconds")
+
+
+# --- connection and schema ------------------------------------------------
+
+def connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db() -> None:
+    with connect() as conn:
+        conn.executescript(SCHEMA)
+
+
+def seed() -> None:
+    """Load both JSON records into SQLite. Safe to call on every startup."""
+    init_db()
+    with open(os.path.join(DATA_DIR, "patient_baseline.json"), encoding="utf-8") as fh:
+        baseline = json.load(fh)
+    with open(os.path.join(DATA_DIR, "discharge_summary.json"), encoding="utf-8") as fh:
+        discharge = json.load(fh)
+
+    with connect() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO patients VALUES (?,?,?,?,?)",
+            (baseline["patient_id"], baseline["name"], baseline["dob"], baseline["sex"], json.dumps(baseline)),
+        )
+        conn.execute(
+            "INSERT OR REPLACE INTO discharge_records VALUES (?,?,?,?,?)",
+            (
+                discharge["encounter_id"],
+                discharge["patient_id"],
+                discharge["procedure_code"],
+                discharge["surgery_date"],
+                json.dumps(discharge),
+            ),
+        )
+
+
+def load_rules() -> list[dict]:
+    with open(os.path.join(DATA_DIR, "red_flags.json"), encoding="utf-8") as fh:
+        return json.load(fh)["rules"]
+
+
+def load_rules_file() -> dict:
+    with open(os.path.join(DATA_DIR, "red_flags.json"), encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+# --- the merged context ---------------------------------------------------
+
+def _years_since(iso_date: str, today: date) -> int:
+    d = date.fromisoformat(iso_date)
+    return today.year - d.year - ((today.month, today.day) < (d.month, d.day))
+
+
+def get_patient_context(patient_id: str = PATIENT_ID) -> dict:
+    """Baseline + discharge merged into the one record the agent reasons over."""
+    with connect() as conn:
+        prow = conn.execute("SELECT json_baseline FROM patients WHERE patient_id=?", (patient_id,)).fetchone()
+        drow = conn.execute(
+            "SELECT json_discharge FROM discharge_records WHERE patient_id=? ORDER BY surgery_date DESC LIMIT 1",
+            (patient_id,),
+        ).fetchone()
+    if not prow or not drow:
+        raise RuntimeError("Database not seeded. Run db.seed() first.")
+
+    baseline = json.loads(prow["json_baseline"])
+    discharge = json.loads(drow["json_discharge"])
+    today = demo_today()
+
+    meds = discharge["discharge_medications"]
+    surgery_date = date.fromisoformat(discharge["surgery_date"])
+
+    # Next appointment. Physical therapy is separated out because it is therapy,
+    # not a clinician who would look at a symptom - the sidebar counts down to
+    # the next clinical review.
+    upcoming = sorted(
+        (f for f in discharge["follow_up"] if date.fromisoformat(f["date"]) > today),
+        key=lambda f: f["date"],
+    )
+
+    def _with_days(f):
+        return dict(f, days_away=(date.fromisoformat(f["date"]) - today).days)
+
+    next_followup = _with_days(upcoming[0]) if upcoming else None
+    clinical = [f for f in upcoming if "therapy" not in f["type"].lower()]
+    next_clinical = _with_days(clinical[0]) if clinical else None
+
+    return {
+        "patient_id": patient_id,
+        "name": baseline["name"],
+        "age": _years_since(baseline["dob"], today),
+        "sex": baseline["sex"],
+        "phone": baseline["phone"],
+        "emergency_contact": baseline["emergency_contact"],
+        "primary_care": baseline["primary_care"],
+        "conditions": baseline["conditions"],
+        "home_medications": baseline["home_medications"],
+        "allergies": baseline["allergies"],
+        "encounter_id": discharge["encounter_id"],
+        "procedure": discharge["procedure"],
+        "procedure_code": discharge["procedure_code"],
+        "laterality": discharge["laterality"],
+        "surgery_date": discharge["surgery_date"],
+        "discharge_date": discharge["discharge_date"],
+        "surgeon": discharge["surgeon"],
+        "discharge_diagnosis": discharge["discharge_diagnosis"],
+        "discharge_medications": meds,
+        "instructions": discharge["instructions"],
+        "warning_list": discharge["warning_list"],
+        "follow_up": discharge["follow_up"],
+        # computed
+        "today": today.isoformat(),
+        "post_op_day": (today - surgery_date).days,
+        "on_anticoagulant": any(m.get("class") == "anticoagulant" for m in meds),
+        "on_opioid": any(m.get("class") == "opioid" for m in meds),
+        "anticoagulant_name": next((m["name"] for m in meds if m.get("class") == "anticoagulant"), None),
+        "next_followup": next_followup,
+        "next_clinical_followup": next_clinical,
+        "days_to_next_appointment": (next_clinical or next_followup or {}).get("days_away"),
+        "helpline": baseline["nurse_helpline"],
+        "on_call": discharge["surgeon"]["on_call_phone"],
+    }
+
+
+# --- writes ---------------------------------------------------------------
+
+def new_conversation(patient_id: str = PATIENT_ID) -> str:
+    conv_id = "C-" + uuid.uuid4().hex[:8]
+    with connect() as conn:
+        conn.execute("INSERT INTO conversations VALUES (?,?,?)", (conv_id, patient_id, _now()))
+    return conv_id
+
+
+def insert_symptom_report(conv_id: str, report: dict) -> int:
+    with connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO symptom_reports (conv_id, created_at, json_report) VALUES (?,?,?)",
+            (conv_id, _now(), json.dumps(report)),
+        )
+        return cur.lastrowid
+
+
+def insert_assessment(conv_id: str, assessment: dict) -> int:
+    with connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO assessments (conv_id, created_at, level, matched_rule_ids, confidence, json_full)"
+            " VALUES (?,?,?,?,?,?)",
+            (
+                conv_id,
+                _now(),
+                assessment["level"],
+                ",".join(m["id"] for m in assessment["matched"]),
+                assessment["confidence"],
+                json.dumps(assessment),
+            ),
+        )
+        return cur.lastrowid
+
+
+def insert_care_team_message(conv_id: str, level: str, summary: str, sent_to: str, eta_hours: int) -> int:
+    with connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO care_team_messages (conv_id, created_at, level, summary, sent_to, eta_hours)"
+            " VALUES (?,?,?,?,?,?)",
+            (conv_id, _now(), level, summary, sent_to, eta_hours),
+        )
+        return cur.lastrowid
+
+
+def insert_checkin(conv_id: str, hours_from_now: float, question: str) -> tuple[int, str]:
+    due = (datetime.now() + timedelta(hours=hours_from_now)).isoformat(timespec="seconds")
+    with connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO checkins (conv_id, created_at, due_at, question) VALUES (?,?,?,?)",
+            (conv_id, _now(), due, question),
+        )
+        return cur.lastrowid, due
+
+
+def insert_diary(conv_id: str, entry: str, level: str, patient_id: str = PATIENT_ID) -> int:
+    with connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO symptom_diary (patient_id, conv_id, created_at, entry, level) VALUES (?,?,?,?,?)",
+            (patient_id, conv_id, _now(), entry, level),
+        )
+        return cur.lastrowid
+
+
+# --- reads ----------------------------------------------------------------
+
+def _rows(table: str, conv_id: str) -> list[dict]:
+    with connect() as conn:
+        rows = conn.execute(f"SELECT * FROM {table} WHERE conv_id=? ORDER BY id", (conv_id,)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def list_assessments_for_conv(conv_id: str) -> list[dict]:
+    return _rows("assessments", conv_id)
+
+
+def list_messages_for_conv(conv_id: str) -> list[dict]:
+    return _rows("care_team_messages", conv_id)
+
+
+def list_checkins_for_conv(conv_id: str) -> list[dict]:
+    return _rows("checkins", conv_id)
+
+
+def list_diary_for_conv(conv_id: str) -> list[dict]:
+    return _rows("symptom_diary", conv_id)
+
+
+def reset_demo() -> None:
+    """Clear everything a conversation produced. Keeps the patient and the
+    discharge record, so the next demo path starts from the same day 4."""
+    init_db()
+    with connect() as conn:
+        for table in CONVERSATION_TABLES:
+            conn.execute(f"DELETE FROM {table}")
+
+
+if __name__ == "__main__":
+    seed()
+    ctx = get_patient_context()
+    print(f"{ctx['name']}, {ctx['age']}  |  {ctx['procedure']}  |  today {ctx['today']}")
+    print(f"post_op_day: {ctx['post_op_day']}")
+    print(f"on_anticoagulant: {ctx['on_anticoagulant']} ({ctx['anticoagulant_name']})   on_opioid: {ctx['on_opioid']}")
+    print(f"next appointment: {ctx['next_clinical_followup']['type']} in {ctx['days_to_next_appointment']} days")
+    print(f"next of any kind:  {ctx['next_followup']['type']} in {ctx['next_followup']['days_away']} days")
+    print(f"helpline {ctx['helpline']}  |  on-call {ctx['on_call']}  |  {len(load_rules())} rules loaded")

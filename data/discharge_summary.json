@@ -1,0 +1,41 @@
+{
+  "patient_id": "P-1001",
+  "encounter_id": "E-55021",
+  "procedure": "Right total knee arthroplasty",
+  "procedure_code": "tka",
+  "laterality": "right",
+  "surgery_date": "2026-09-08",
+  "discharge_date": "2026-09-10",
+  "surgeon": {"name": "Dr. Marcus Ellery", "practice": "Medical Mile Orthopaedic Center", "office_phone": "616-555-0150", "on_call_phone": "616-555-0199"},
+  "discharge_diagnosis": "Primary osteoarthritis of right knee, status post right total knee arthroplasty. Uncomplicated hospital course.",
+  "discharge_medications": [
+    {"name": "apixaban", "dose": "2.5 mg", "frequency": "twice daily", "duration_days": 14, "purpose": "blood clot prevention", "class": "anticoagulant"},
+    {"name": "oxycodone", "dose": "5 mg", "frequency": "every 6 hours as needed for severe pain", "class": "opioid"},
+    {"name": "acetaminophen", "dose": "1000 mg", "frequency": "every 8 hours", "class": "analgesic"},
+    {"name": "docusate", "dose": "100 mg", "frequency": "twice daily", "purpose": "prevent constipation from oxycodone"},
+    {"name": "continue home medications", "note": "lisinopril, metformin, atorvastatin unchanged"}
+  ],
+  "instructions": {
+    "weight_bearing": "As tolerated with walker",
+    "wound_care": "Keep waterproof dressing on and dry until the 2-week wound check. Do not submerge. A small amount of clear or pink drainage is expected in the first 2-3 days.",
+    "activity": "Home exercises 3 times daily. Outpatient physical therapy starts 2026-09-14. Walk short distances every 1-2 hours while awake.",
+    "swelling": "Ice 20 minutes at a time, several times a day. Elevate the leg above heart level when resting. Swelling and bruising of the knee, thigh and shin are expected for several weeks.",
+    "diet": "Regular diabetic diet. Drink plenty of water."
+  },
+  "warning_list": [
+    "Call 911 for chest pain, trouble breathing, coughing up blood, or if you faint.",
+    "Call the on-call line right away for pain, swelling, warmth or tenderness in your calf - this can be a blood clot.",
+    "Call for a temperature above 101F (38.3C) or chills.",
+    "Call for drainage from the incision that is yellow, green, cloudy, or has a bad smell, or drainage that increases after day 3.",
+    "Call for redness that spreads away from the incision, or red streaks.",
+    "Call for bleeding that soaks through the dressing. You are on a blood thinner; if bleeding does not stop with 10 minutes of firm pressure, call 911.",
+    "Call if your foot or toes become cold, pale, blue, or numb, or you cannot move your foot.",
+    "Call if you fall, or your knee suddenly cannot bear weight.",
+    "Call if pain is not controlled by your medication as prescribed."
+  ],
+  "follow_up": [
+    {"type": "Wound check", "with": "Ortho clinic nurse", "date": "2026-09-24"},
+    {"type": "Post-op visit", "with": "Dr. Ellery", "date": "2026-10-22"},
+    {"type": "Physical therapy", "with": "River City PT", "date": "2026-09-14", "note": "then 3x/week"}
+  ]
+}

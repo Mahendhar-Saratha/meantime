@@ -1,0 +1,26 @@
+{
+  "patient_id": "P-1001",
+  "name": "Robert Hale",
+  "dob": "1959-03-14",
+  "sex": "M",
+  "phone": "616-555-0187",
+  "emergency_contact": {"name": "Linda Hale", "relation": "wife", "phone": "616-555-0188"},
+  "primary_care": {"clinician": "Dr. Priya Natarajan", "practice": "Grand Rapids Family Medicine", "phone": "616-555-0120"},
+  "nurse_helpline": "616-555-0142",
+  "conditions": [
+    {"name": "Hypertension", "since": "2014"},
+    {"name": "Type 2 diabetes mellitus", "since": "2018", "last_a1c": 7.1},
+    {"name": "Hyperlipidemia", "since": "2016"},
+    {"name": "Osteoarthritis, right knee", "since": "2021"}
+  ],
+  "home_medications": [
+    {"name": "lisinopril", "dose": "20 mg", "frequency": "once daily"},
+    {"name": "metformin", "dose": "1000 mg", "frequency": "twice daily"},
+    {"name": "atorvastatin", "dose": "40 mg", "frequency": "nightly"}
+  ],
+  "allergies": [{"substance": "penicillin", "reaction": "rash"}],
+  "height_cm": 178,
+  "weight_kg": 98,
+  "bmi": 30.9,
+  "smoker": false
+}
